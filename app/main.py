@@ -4,8 +4,8 @@ app = FastAPI()
 
 @app.get("/")
 def root():
-    return {"message" : "Quiz App is sprinting"}
+    return "Quiz App is sprinting"
 
 @app.get("/health")
 def health():
-    return {"status" : "ok"}
+    return "health is ok"
