@@ -3,9 +3,9 @@ from fastapi import FastAPI
 app = FastAPI()
 
 @app.get("/")
-def root():
+async def root():
     return "Quiz App is sprinting"
 
 @app.get("/health")
-def health():
+async def health():
     return "health is ok"

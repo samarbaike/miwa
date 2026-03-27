@@ -1,0 +1,39 @@
+
+
+But to save you from getting lost in the docs, I will give you the exact 
+SQLAlchemy "Cheat Sheet" you need to write your `register` method.
+
+### Your SQLAlchemy Cheat Sheet
+
+**1. How to check if something exists:**
+When the Chef checks the pantry, they use the `query`, `filter`, and `first` methods.
+```python
+# Translates to: "Hey session, look at the Player table. 
+# Filter it where the database email matches the user's input email. 
+# Give me the first one you find, or give me None."
+existing_user = session.query(Player).filter(Player.email == user_in.email).first()
+```
+
+**2. How to save something new:**
+If `existing_user` is `None` (meaning the email is free!), the Chef can create the new user and 
+save it in 4 steps:
+```python
+# Step A: Create the database object (using the hashed password, NOT the plain one!)
+new_player = Player(username=user_in.username, email=user_in.email, password_hash=hashed_pw)
+
+# Step B: Put it in the session (the staging area)
+session.add(new_player)
+
+# Step C: Commit it to the database (actually save it)
+session.commit()
+
+# Step D: Refresh the object so PostgreSQL hands you back the newly generated ID
+session.refresh(new_player)
+```
+
+### Your Turn
+You now have the exact queries you need. 
+
+Can you take this cheat sheet and your `Hasher` class, and try to write out the full 
+`async def register(session, user_in)` method? Remember to add an `if` statement to check 
+if the user already exists, and raise an HTTPException if they do!  
