@@ -14,6 +14,7 @@ class BaseUser(Base):
 # 2. THE PLAYER CHILD CLASS
 class Player(BaseUser):
     __tablename__ = "players"
+    
     password_hash = Column(String(255), nullable=False)
     rank = Column(Integer, default=110) 
     wins = Column(Integer, default=0)
