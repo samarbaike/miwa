@@ -4,3 +4,4 @@ In the file there is my dev plan, you can start from the today's date. There's o
 - This is my first time developing app of this kind, 
 so I am not familiar with of the underlying concept, excepts those already finished in previous days. If there's new concept that was not explicitly mentioned in the prev
 ious days' steps, first cover those new concepts. There's a way for that too: first direct me up to date documentation of that concept, but if that concept is just a single word of function just explain in the chat
+- You will be working tightly with files in repo Miwa
