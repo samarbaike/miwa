@@ -1,0 +1,421 @@
+Miwa
+9-Week Learning Roadmap  |  Mon-Fri only
+Days 1-3 completed  |  Weekends (Sat + Sun) are always free  |  Routes start Day 7
+samarbaike  |  Applied Mathematics and Informatics  |  OOP Coursework + Erasmus Portfolio
+How to read this plan
+Weekdays (Mon-Fri) are working days. Saturday and Sunday are always free -- no code, no notebooks, no GitHub. Use that time for rest, Quran, Arabic, and being outdoors. This is not laziness; it is what makes the weekday work sustainable over months.
+
+Block A is always university-integrated work (Applied Stats, OOP, DAA). Block B is always Miwa app work. Block D is the GitHub push. Resource boxes appear before any day that introduces a new technology -- read those before writing code.
+
+SymbolMeaningOUTCOME:What you must demonstrate or explain before this block is completePUSH:Minimum acceptable GitHub commit for the dayNOTE:A warning that saves debugging timeGrey / strikethroughAlready completed days -- shown for reference only
+Weekly rhythm
+ScheduleMon to FriWorking days: Block A (2h) + Block B (2h) + Block C (0.5h) + Block D (0.5h) = 5hSaturdayFREE -- no work of any kindSundayFREE -- no work of any kind
+
+What we are building
+FeatureDescriptionAuthRegister and login with bcrypt hashing. Session stored in the database.MatchmakingELO window starts +-15, expands +-5 every 10 seconds until a match is found.Ghost botAssigned if no human found. Replays exact answers and reaction times of a historical top-scoring player per question. Data seeded by a separate script later.Real-time game9-event WebSocket protocol drives the full match from connect to final result.Scoring1 point per correct answer. Speed is tie-breaker. ELO updates after every match.Match modesRanked (ELO changes), Practice (no ELO), Invite (private room code).Questions3 categories: Math, Grammar, Analogy. 4-option multiple choice. Optional image. Entered via psql directly.LeaderboardTop players sorted by ELO rank.ProfileRank, wins, streak, total matches, match history.Frontend6 pages: Login, Home, Matchmaking, QuizBattle, Leaderboard, Profile.
+Project folder structure
+File / FolderPurposeapp/main.pyEntry point. Creates the FastAPI app and mounts all routers.app/database.pyDatabase connection. Shared across the whole app.app/models/SQLAlchemy classes defining database tables. One file per entity.app/schemas/Pydantic classes defining what data looks like entering and leaving the API.app/services/All business logic. Routes call these. Services call models.app/routes/FastAPI routers. Thin -- receive request, call service, return response.app/websocket_manager.pyConnectionManager class. Tracks all active WebSocket connections.app/core/events.pyAll WebSocket event name constants as class attributes.app/core/security.pyPassword hashing and verification helpers.frontend/HTML, CSS, JS for all 6 pages. Vanilla only.docs/Testing checklist, WebSocket protocol reference, API table.
+
+WEEK 1  |  24–29 Mar 2026
+Goal: Foundation (Days 1-3 done) | Day 4: DAA + Stats | Weekend: free
+Days 1, 2, and 3 are complete. Day 4 is Friday -- a working day, but routes do not start until Day 7. Use Friday for DAA and catching up on Applied Stats. Then disconnect completely for the weekend.
+
+Day 1  --  Tuesday, 24 Mar  (COMPLETED)Done
+• WSL set up, ~/projects/miwa created, venv, packages installed
+• Full folder structure created with __init__.py files
+• app/main.py with GET / and GET /health -- server runs, /docs opens
+PUSH: 'init: project scaffold + folder structure + health endpoint'
+Day 2  --  Wednesday, 25 Mar  (COMPLETED)Done
+• OOP concepts map written -- 8 concepts, each mapped to Miwa
+• app/database.py: engine, session factory, declarative Base
+• app/models/user.py: BaseUser (abstract), Player(BaseUser), Admin(BaseUser)
+• app/models/question.py: Question (abstract), MultipleChoice(Question)
+• app/models/match.py: MatchStatus + MatchMode enums, Match model
+• app/models/bot.py: Bot with botname, backstory, performance_data (JSON), advice_data (JSON)
+PUSH: 'feat: all OOP models -- BaseUser/Player/Admin, Question/MultipleChoice, Match enums, Ghost Bot'
+Day 3  --  Thursday, 26 Mar  (COMPLETED)Done
+• Applied Stats: Pandas intro (02.00-02.03) -- Series, DataFrame, read CSV, info/describe/head
+• app/schemas/user.py: UserRegister, UserResponse, UserStats
+• app/core/security.py: hash_password(), verify_password() via passlib CryptContext
+• app/services/auth_service.py: AuthService class with register method
+• app/models/session.py: Session table
+PUSH: 'feat: Pydantic schemas + AuthService register + security helpers + Session model'
+Day 4  --  Friday, 27 MarBlock A
+2h• DAA: implement Stack and Queue from scratch in Python using only a list -- no deque yet
+? Stack: push, pop, peek, is_empty, size -- all with docstrings
+? Queue: enqueue, dequeue, peek, is_empty, size -- all with docstrings
+? After writing: think about why Queue is the right structure for a waiting player pool. Write that reasoning as a comment at the top of the file.
+OUTCOME: You can state the O() complexity for each operation and explain why a queue fits matchmaking better than a stack
+PUSH: daa/data_structures.pyBlock B
+2h• Applied Stats: Pandas indexing and selection (02.04) -- loc, iloc, boolean masks, conditional filtering
+? Practice on a small dataset you create yourself in the notebook -- do not use a downloaded file
+OUTCOME: You can select any subset of rows using loc, iloc, and a boolean condition without looking up the syntax
+PUSH: applied-stats/ch02_indexing.ipynb
+Day 5  --  Saturday, 28 Mar   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+Day 6  --  Sunday, 29 Mar   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+
+WEEK 2  |  30 Mar – 5 Apr 2026
+Goal: All REST routes complete + WebSocket foundation + Matchmaking service
+This is the week everything connects. By Friday you will have a fully working REST API (all endpoints testable in /docs) and the WebSocket connection layer running. Routes start today on Day 7.
+
+RESOURCES  --  Before Day 7 -- FastAPI routes and dependency injectionTypeResourceWhereOfficial tutorialFastAPI -- Path Parameters, Request Body, Dependencies (sections 6-12)fastapi.tiangolo.com/tutorialReadFastAPI Depends() -- how dependency injection works for authfastapi.tiangolo.com/tutorial/dependenciesReadHTTP cookies in FastAPI -- reading and setting session cookiesfastapi.tiangolo.com/tutorial/cookie-paramsConceptA route handler should do almost nothing itself: receive input, call a service, return output. All logic lives in services.Re-read the folder structure section of this plan
+Day 7  --  Monday, 30 MarBlock A
+2h• Applied Stats: sorting and ranking (02.06 to 02.07) -- sort_values, rank, nlargest on a player-like dataset
+OUTCOME: You can rank a DataFrame by a numeric column and extract the top N rows
+PUSH: applied-stats/ch02_ranking.ipynbBlock B
+2h• app/routes/auth.py: POST /api/register and POST /api/login -- both thin, calling AuthService only
+? Register: receive UserRegister body, call AuthService.register(), return UserResponse
+? Login: receive credentials, call AuthService.verify_password(), create a Session row in the database, set a session cookie in the response
+• Add get_current_player dependency function: reads the session cookie, looks up the Session in the database, returns the Player -- raises HTTP 401 if not found or expired
+• Test the full flow in /docs: register a new user, login, confirm the session row appears in your database
+OUTCOME: You can register, login, and access a protected route using only the session cookie as proof of identity
+PUSH: 'feat: auth routes (register, login) + session cookie + get_current_player dependency'
+Day 8  --  Tuesday, 31 MarBlock A
+2h• DAA: recursion -- write recursive factorial, sum of a list, and binary search
+• Then implement memoised Fibonacci and compare its runtime against the naive recursive version
+OUTCOME: You can explain the call stack, base case, and why naive Fibonacci is exponential while memoised is linear
+PUSH: daa/recursion_and_dp.py + daa/complexity_notes.mdBlock B
+2h• app/services/elo_service.py: EloService class with one method -- calculate_new_ratings(winner_rank, loser_rank) returns both new ratings
+? Formula: expected = 1 / (1 + 10^((opponent - player) / 400)); new = old + 32 * (actual - expected); actual is 1 for win, 0 for loss
+• Verify by hand: pick two ratings (e.g. 1200 vs 1350) and trace the formula step by step on paper before trusting your code
+• app/routes/users.py: three route handlers
+? GET /api/user/:id -- return UserResponse
+? GET /api/user/:id/stats -- return UserStats
+? GET /api/leaderboard -- top 20 players ordered by rank descending
+OUTCOME: Leaderboard returns real data, ELO formula gives correct values when traced by hand
+PUSH: 'feat: EloService + user routes (profile, stats, leaderboard)'
+Day 9  --  Wednesday, 1 AprBlock A
+2h• OOP coursework: mirror your Java subclassing assignment in Python -- BaseUser, Player, Admin with method overriding
+• Write this as a completely standalone script with no FastAPI imports -- it is a pure OOP demonstration for your professor
+OUTCOME: A self-contained file that clearly shows inheritance, encapsulation, and method overriding
+PUSH: oop/subclassing_demo.pyBlock B
+2h• app/routes/matches.py: two route handlers
+? GET /api/match/:id -- load and return the current state of a match
+? POST /api/matches/create-invite -- create a Match record in WAITING status, generate a random 6-character alphanumeric room code, return it
+• Write docs/rest_checklist.md: a table listing every endpoint built so far, the expected request body, and the expected response
+• Run through every endpoint in /docs and confirm each one against the checklist
+OUTCOME: Every REST endpoint works correctly. The checklist is complete and accurate.
+PUSH: 'feat: match routes (load + invite) + REST smoke test + endpoint checklist'
+RESOURCES  --  Before Day 10 -- WebSockets: the mental modelTypeResourceWhereWatch firstWebSockets in 100 Seconds by FireshipYouTube: search 'Fireship WebSocket'Official docsFastAPI WebSockets tutorialfastapi.tiangolo.com/advanced/websocketsReadHTTP vs WebSocket -- when and why to use eachably.com/topic/http-vs-websocketCritical conceptA WebSocket is a persistent two-way channel, not a request-response pair. Think phone call, not letter. Both sides can send at any time.Re-read the Fireship description if unclearOfficial docsPython asyncio -- event loop, async/await, coroutinesdocs.python.org/asyncioVideo (25 min)Async Python and asyncio explained simply by mCodingYouTube: search 'mCoding asyncio'
+Day 10  --  Thursday, 2 AprBlock A
+2h• Applied Stats: missing data (03.02) -- isnull, fillna, dropna, and choosing the right strategy
+OUTCOME: You can identify missing values, explain three ways to handle them, and choose between them based on context
+PUSH: applied-stats/ch03_missing_data.ipynbBlock B
+2h• app/websocket_manager.py: design and implement the ConnectionManager class
+? It must track which WebSocket connections belong to which match -- think before coding: what data structure enables this?
+? Methods: connect (add a socket to a match group), disconnect (remove it cleanly), broadcast (send to all in a match), send_to (send to one specific socket)
+? Every send method must be async
+• app/core/events.py: a class with class attributes for all 9 WebSocket event names (8 spec events + match_found). Using a class means a typo causes an immediate error.
+• app/routes/ws.py: WebSocket endpoint at /ws/match/{match_id} -- for now just accept connections and echo whatever it receives
+• Test: open two browser tabs, use the browser console JavaScript WebSocket API to connect to the same match_id. Confirm both receive a message when you broadcast.
+NOTE: You cannot test WebSockets in /docs. Use the browser console or install websocat in WSL.
+OUTCOME: Two browser connections to the same match_id both receive a server broadcast
+PUSH: 'feat: ConnectionManager + WSEvent constants + WebSocket echo endpoint'
+RESOURCES  --  Before Day 11 -- asyncio background tasks for matchmakingTypeResourceWhereOfficial docsFastAPI Background Tasksfastapi.tiangolo.com/tutorial/background-tasksOfficial docsasyncio.create_task -- running coroutines in the backgrounddocs.python.org/asyncio/tasksConceptThe matchmaking tick (expanding ELO windows) must run every 10 seconds regardless of incoming requests. A background task is how you do this in FastAPI without blocking the server.Think through how asyncio.sleep fits into an infinite loop
+Day 11  --  Friday, 3 AprBlock A
+2h• Applied Stats: merge and join (03.05) -- merge on key, left/inner/right join differences
+OUTCOME: You can join two DataFrames on a shared key and explain what happens to rows that do not match in each join type
+PUSH: applied-stats/ch03_merge.ipynbBlock B
+2h• app/services/matchmaking_service.py: two classes
+? WaitingPlayer: wraps a Player with matchmaking-specific data -- category preference, join time, current ELO window (starts at 15). Must have a method to expand its own window by 5.
+? MatchmakingPool: manages the waiting list. Your Queue from Day 4 is the same concept -- apply it here.
+? MatchmakingPool needs: enqueue (add player), dequeue (remove by ID), try_pair (check mutual window: A fits B's window AND B fits A's window -- both required), tick (expand all windows)
+• app/routes/matchmaking.py: POST /api/matchmaking/join -- validate player is not already in an active match, create WaitingPlayer, add to pool
+• Start a background asyncio task that calls pool.tick() every 10 seconds when the app starts
+OUTCOME: You can trace the mutual window check by hand and explain why both conditions must be true to prevent unfair matches
+PUSH: 'feat: MatchmakingPool with ELO window expansion + join route + background tick'
+Day 12  --  Saturday, 4 Apr   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+Day 13  --  Sunday, 5 Apr   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+
+WEEK 3  |  6–12 Apr 2026
+Goal: Full WebSocket game loop + Ghost bot (GhostEngine)
+The hardest week technically. By Friday two players can complete a full match from start to final ELO update -- entirely driven by WebSocket events. Ghost bot is also complete by end of week.
+
+Day 14  --  Monday, 6 AprBlock A
+2h• Applied Stats: GroupBy and Aggregation (03.06) -- groupby, agg, named aggregation, transform
+OUTCOME: You can group a DataFrame by a categorical column and compute multiple different aggregates in one call
+PUSH: applied-stats/ch03_groupby.ipynbBlock B
+2h• app/services/game_service.py: GameService class tracking live match state in memory
+? Think carefully about what data it needs to hold: which question is active, what answers have arrived, current scores for both players
+? It needs to detect when both players have answered or when the 30-second timer expires
+? Design the class interface (what methods it exposes) before writing any method bodies
+• Wire the WebSocket endpoint for the join_match event: when a client connects, add to ConnectionManager, broadcast match_update and player_joined to the opponent
+• When both players are connected to the same match: server sends question_start with the first question (index 0), fetching the question data from the database by the question IDs stored in the match
+OUTCOME: Two players connecting to the same match both automatically receive the first question
+PUSH: 'feat: GameService state tracker + join_match WS handler + question_start broadcast'
+Day 15  --  Tuesday, 7 AprBlock A
+2h• Applied Stats: pivot tables (03.07) and string operations (03.08)
+OUTCOME: You can create a pivot table from a DataFrame and apply a string cleaning function to a column
+PUSH: applied-stats/ch03_pivot_strings.ipynbBlock B
+2h• WebSocket game flow: answer submission and round resolution
+• Handle the submit_answer event: receive questionIndex, answerIndex, timeMs from the client
+? Immediately broadcast player_answered to the opponent -- tells them the other person answered, but does NOT reveal what they chose
+? Record the answer in GameService
+• When both players have answered (or 30-second timer fires): determine who was correct, who was faster if tied, update scores
+• Broadcast question_results to both players: correct answer index, updated scores for both players
+OUTCOME: You can trace one full question round from two client submissions to both receiving the results
+PUSH: 'feat: submit_answer + player_answered broadcast + question_results'
+Day 16  --  Wednesday, 8 AprBlock A
+2h• OOP Java class: collections and exception handling -- write Python equivalent notes alongside each Java concept
+OUTCOME: You can compare Java ArrayList/HashMap to Python list/dict and Java try-catch to Python try-except with examples
+PUSH: oop/collections_exceptions_notes.mdBlock B
+2h• WebSocket game flow: match completion
+• After the final question resolves: determine the winner (most points; speed as tie-breaker)
+• Call EloService.calculate_new_ratings with both players' current ranks
+• Update both Player records in the database: rank, wins, streak (increment on win, reset on loss), total_matches
+• Store questions_data and answers_data as JSON blobs in the Match record -- enables replay and validation later
+• Broadcast match_ended to both players with final scores, winner identity, and ELO change shown as +N or -N
+OUTCOME: A complete match updates the database correctly and both clients receive the final result with ELO change
+PUSH: 'feat: match_ended + ELO update + stats update + JSON blobs in Match record'
+RESOURCES  --  Before Day 17 -- Ghost bot: asyncio and JSON lookupTypeResourceWhereOfficial docsasyncio.sleep -- waiting without blocking other playersdocs.python.org/asyncio/tasksConceptThe Ghost bot does NOT use random numbers. It reads performance_data from the database to find the exact time_ms and answer_index for the current question ID. This is deterministic -- the Ghost always replays what the original player did.Re-read the Ghost bot section of this planConceptFallback strategy: if the question ID is NOT in performance_data (question added after the Ghost was recorded), decide before coding what the Ghost should do -- skip with a fixed delay, or pick option 0. Document your choice in a comment. No random().Think through this before writing any codeOfficial docsPython dict.get() -- safely reading a key that may not existdocs.python.org/library/stdtypes#dict.get
+Day 17  --  Thursday, 9 AprBlock A
+2h• DAA: dynamic programming tabulation -- implement longest common subsequence using a 2D table
+OUTCOME: You can explain the difference between memoisation (top-down, recursive) and tabulation (bottom-up, iterative) and when each is preferable
+PUSH: daa/dp_tabulation.pyBlock B
+2h• app/services/bot_service.py: GhostEngine class
+? GhostEngine wraps a Bot database object and gives it behaviour
+? Core method (async): given a question object, look up the question's ID in the bot's performance_data JSON
+? If found: read the exact time_ms and answer_index. Wait for time_ms milliseconds using asyncio.sleep. Then return that answer_index.
+? If not found (fallback): use your pre-decided strategy. Document it clearly in a comment. Do not use random().
+? After resolving the answer: check advice_data for this question ID. If advice exists AND the human player answered in under 5 seconds, broadcast that advice string to the human player.
+• NOTE on Ghost bot data: performance_data and advice_data are too complex to enter manually via psql. For now, insert a minimal Bot row via psql (botname and backstory only, empty JSON objects for the data fields) and verify the fallback path works. You will build a separate seeding script later to populate real historical data.
+• Integrate: if matchmaking pool finds no human opponent after a configurable timeout, assign a Ghost bot and start the match using GhostEngine
+OUTCOME: A match against a Ghost bot starts, GhostEngine uses the fallback correctly on unknown questions, the flow completes end-to-end
+PUSH: 'feat: GhostEngine reading performance_data + fallback + advice_data display + Ghost fallback in matchmaking'
+Day 18  --  Friday, 10 AprBlock A
+2h• Applied Stats: central tendency (04.00) and dispersion (04.01) -- mean, median, mode, std, variance, IQR
+OUTCOME: You can compute all six statistics for a column and explain what each one tells you about the distribution
+PUSH: applied-stats/ch04_central_dispersion.ipynbBlock B
+2h• Full two-player end-to-end test: open two browser tabs and manually connect via the JavaScript WebSocket API
+• Both players join the matchmaking pool, get paired, complete a full match, check the database to confirm ELO and stats updated correctly
+• Think about edge cases: what if one player disconnects mid-match? What if both answers arrive at the same millisecond?
+• Document any bugs in docs/known_issues.md
+• Write docs/websocket_protocol.md: a table with all 9 events, who sends each one, the payload structure, and what happens next -- this is a required OOP coursework deliverable
+OUTCOME: Two human players can complete a full ranked match and their profiles correctly reflect the result
+PUSH: 'docs: WebSocket protocol reference + end-to-end test notes + week3 review'
+Day 19  --  Saturday, 11 Apr   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+Day 20  --  Sunday, 12 Apr   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+
+WEEK 4  |  13–19 Apr 2026
+Goal: Frontend -- all 6 pages connected to the live backend
+Backend is complete. This week is the user-facing application. Vanilla HTML, CSS, and JavaScript only -- no framework. The goal is understanding how a browser talks to your backend.
+
+RESOURCES  --  Before Day 21 -- Browser fundamentalsTypeResourceWhereOfficial docsfetch() API -- making HTTP requests from the browserdeveloper.mozilla.org -- Fetch APIOfficial docsBrowser WebSocket API -- opening a WS connection in JSdeveloper.mozilla.org -- WebSocketOfficial docsHTML forms and preventing default submit behaviourdeveloper.mozilla.org -- HTMLFormElementVideo (20 min)Vanilla JS fetch, async/await, and JSON by Traversy MediaYouTube: search 'Traversy Media Fetch API'
+Day 21  --  Monday, 13 AprBlock A
+2h• Applied Stats: correlation analysis (04.02) -- Pearson, Spearman, scatter plots with Matplotlib
+OUTCOME: You can compute both correlation types, plot them, and explain when Spearman is preferred over Pearson
+PUSH: applied-stats/ch04_correlation.ipynbBlock B
+2h• frontend/static/style.css: base stylesheet for the entire app -- CSS variables for colour palette, typography, button styles, card layout, form layout. Every page links this one file.
+• frontend/index.html: login and register forms, one visible at a time, toggled by a button
+? On login submit: POST to /api/login, on success store session and redirect to home.html
+? On register submit: POST to /api/register, then automatically log in and redirect
+OUTCOME: You can register a new account and log in from the browser, landing on home.html
+PUSH: 'feat: base CSS + login and register page'
+Day 22  --  Tuesday, 14 AprBlock A
+2h• Applied Stats: distributions (04.03) -- normal, uniform, binomial; plotting with Matplotlib
+OUTCOME: You can plot the distribution of a numeric column and explain what skewness and kurtosis mean visually
+PUSH: applied-stats/ch04_distributions.ipynbBlock B
+2h• frontend/home.html: logged-in player username and ELO, Play button going to matchmaking.html, nav links to leaderboard and profile
+• frontend/leaderboard.html: fetch GET /api/leaderboard on page load, render a scrollable ranked list with position, username, ELO
+• frontend/profile.html: fetch GET /api/user/:id/stats on page load, display rank, wins, streak, total matches
+OUTCOME: All three pages load real data from your API and display it without errors
+PUSH: 'feat: home, leaderboard, and profile pages'
+Day 23  --  Wednesday, 15 AprBlock A
+2h• OOP Java class: whatever the current topic is (UML, Spring intro, or advanced OOP) -- write concise notes and Python equivalents
+OUTCOME: You have notes covering this week's Java class content
+PUSH: oop/week04_notes.mdBlock B
+2h• frontend/matchmaking.html: the waiting screen
+? Show a spinner and 'Finding opponent...' text
+? On page load: POST to /api/matchmaking/join, then open a WebSocket to /ws/match/:id
+? Display the current ELO search window, updating visually every 10 seconds to show expansion
+? When match_found event arrives: redirect to battle.html?match_id=X
+OUTCOME: Opening matchmaking.html and waiting results in an automatic redirect when a match is found
+PUSH: 'feat: matchmaking waiting page + ELO window display + match_found redirect'
+Day 24  --  Thursday, 16 AprBlock A
+2h• DAA: complexity analysis for your own matchmaking algorithm
+? MatchmakingPool.try_pair(): what is the time complexity as pool size grows? What if 1000 players are waiting?
+? GameService answer resolution: is there a race condition if both answers arrive simultaneously? How would you prevent it?
+• Write as a proper analysis document with O() notation, reasoning, and improvement suggestions
+OUTCOME: You can explain the complexity of try_pair() and identify the race condition risk
+PUSH: daa/matchmaking_complexity.mdBlock B
+2h• frontend/battle.html and frontend/static/battle.js: the core game view
+? On page load: read match_id from URL, open WebSocket to /ws/match/:id
+? Display opponent username and ELO in the header
+? On question_start: render question body and four answer buttons
+? If question has an image URL, display it above the question text
+? 30-second countdown timer -- when it hits zero, submit null answer automatically
+? Opponent status: 'Thinking...' until player_answered arrives, then 'Answered!'
+? On button click: send submit_answer with questionIndex, answerIndex, elapsed milliseconds
+OUTCOME: The battle page renders a question, starts the timer, shows opponent status, and sends the answer correctly
+PUSH: 'feat: battle page with question display, timer, opponent status, answer submission'
+Day 25  --  Friday, 17 AprBlock A
+2h• Applied Stats: statistical functions (04.04) -- scipy.stats basics; Pearson and Spearman test versions (04.05)
+OUTCOME: You can run a statistical significance test on a correlation and interpret the p-value
+PUSH: applied-stats/ch04_stats_functions.ipynbBlock B
+2h• battle.js: handle question_results -- highlight correct answer green, any wrong answer the player chose in red, show updated scores for both players
+• Auto-advance to next question after a 2-second pause
+• battle.js: handle match_ended -- show a result overlay with final score, winner identity, ELO change as +N or -N, and a Play Again button back to home.html
+• Practice mode: solo play that bypasses matchmaking, draws random questions from the database, no ELO change
+• Invite mode: Create Private Game button calls POST /api/matches/create-invite and shows the room code; Join with Code input connects to that match via WebSocket
+• Mode selector on home.html: Ranked / Practice / Invite
+OUTCOME: A complete match plays from start to finish in the browser. All three modes are accessible.
+PUSH: 'feat: results display, match end overlay, practice mode, invite mode, mode selector'
+Day 26  --  Saturday, 18 Apr   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+Day 27  --  Sunday, 19 Apr   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+
+WEEK 5  |  20–26 Apr 2026
+Goal: Deployment + OOP coursework + documentation sprint
+App is feature-complete. This week you put it on the internet, write the OOP coursework design document, and complete the documentation. These are the three things European professors see first.
+
+RESOURCES  --  Before Day 28 -- Deploying a FastAPI appTypeResourceWhereGuideDeploy FastAPI on Render -- official guiderender.com/docs/deploy-fastapiGuideDeploy FastAPI on Railwaydocs.railway.app -- search FastAPIReadEnvironment variables -- why you never hardcode secrets12factor.net/configConceptRender provides a free hosted PostgreSQL instance. Set DATABASE_URL in the dashboard to point at it. Then connect to that hosted DB with psql to INSERT your questions.Read the Render Postgres docs
+Day 28  --  Monday, 20 AprBlock A
+2h• Applied Stats: regression analysis (04.06) -- linear regression with statsmodels, interpreting coefficients and R-squared
+• Applied Stats: regression visualization (04.07) -- plot the regression line over the scatter, plot residuals
+OUTCOME: You can fit a linear regression, read the summary table, and explain what slope, intercept, and R-squared mean
+PUSH: applied-stats/ch04_regression.ipynbBlock B
+2h• Deployment preparation -- do not deploy yet, just prepare the codebase
+• Move all hardcoded values (DATABASE_URL, SECRET_KEY, session expiry, ELO constants) to environment variables using Pydantic BaseSettings
+• Create .env.example listing every required variable with a placeholder
+• Add CORS middleware so the frontend can make cross-origin requests to the API
+• Pin all package versions in requirements.txt
+OUTCOME: The app reads all secrets from environment variables. Nothing sensitive is in the source code.
+PUSH: 'feat: env var config + CORS middleware + pinned requirements.txt'
+Day 29  --  Tuesday, 21 AprBlock A
+2h• Applied Stats: categorical analysis (04.08) and chi-square test (04.09)
+OUTCOME: You can perform a chi-square test of independence and explain what the p-value tells you about the relationship between two categorical variables
+PUSH: applied-stats/ch04_categorical_chi2.ipynbBlock B
+2h• Deploy to Render or Railway: create account, link GitHub repository, set all environment variables in the dashboard, trigger the deploy
+• Create a hosted PostgreSQL instance on the same platform and set DATABASE_URL to point at it
+• Connect to the hosted database using psql with the connection string provided by the platform and INSERT your MVP questions directly
+? This is the same psql INSERT process you practiced locally -- same syntax, different connection string
+• Confirm the deployed app is live: register, login, and complete a match at the public URL
+OUTCOME: The app is live at a public URL with questions in the hosted database
+PUSH: 'feat: deployed to Render/Railway -- public URL added to README'
+Day 30  --  Wednesday, 22 AprBlock A
+2h• Ask two people to test the deployed app and report every bug and confusion point
+• Write docs/user_testing_log.md: who tested, what they tried, every issue found
+• Fix the top 3 most critical bugs from that list
+OUTCOME: At least 2 people have completed a full match on the public URL
+PUSH: 'chore: user testing log + top 3 critical bug fixes'Block B
+2h• Error handling audit: go through every route and confirm it returns clean JSON for 400, 401, 404, and 409 status codes
+• Structured logging: add log entries for matchmaking events (player joined, paired, timed out), ELO changes, and WebSocket connect/disconnect
+OUTCOME: No route crashes the server with an unhandled exception. Server logs are readable and useful.
+PUSH: 'feat: error handling audit + structured logging'
+Day 31  --  Thursday, 23 AprBlock A
+2.5h• OOP coursework design document -- write oop/coursework_report.md with five sections:
+? Section 1: System overview -- what Miwa is, what problem it solves, the overall architecture
+? Section 2: UML class diagram -- inheritance hierarchy for BaseUser/Player/Admin, Question/MultipleChoice, and all service classes
+? Section 3: OOP concept map -- for each of the 8 concepts, name the exact class and method, paste a 3-line excerpt of your own code
+? Section 4: 3-layer architecture -- explain how the DAL (models), Service layer (services), and API layer (routes) are separated and why this separation matters
+? Section 5: Design decisions -- 2 to 3 choices you made (e.g. why GhostEngine is deterministic, why GameService is stateful in memory) and your reasoning
+OUTCOME: A professor who has never seen your code can read this document and understand the architecture
+PUSH: 'docs: OOP coursework report'Block B
+1.5h• CONTRIBUTING.md: how to add a new question category, how to create a new Ghost bot profile (noting that performance_data requires the separate seeding script), how to add a new WebSocket event
+OUTCOME: Anyone reading CONTRIBUTING.md knows exactly how to extend the app
+PUSH: 'docs: CONTRIBUTING.md'
+RESOURCES  --  Before Day 32 -- scikit-learn basicsTypeResourceWhereOfficial docsscikit-learn Getting Started -- read the intro section onlyscikit-learn.org/stable/getting_startedReadLogistic regression in scikit-learn -- fit, predict, scorerealpython.com/logistic-regression-pythonConceptTrain/test split: why you hold out data to evaluate the model on data it has never seenscikit-learn.org/stable/modules/cross_validation
+Day 32  --  Friday, 24 AprBlock A
+2h• Applied Stats: modeling exercises (04.10) -- apply sklearn logistic regression to predict match win/loss from ELO difference as the feature
+? Train/test split, fit, predict, print accuracy report
+OUTCOME: You can train a logistic regression model, evaluate it, and explain what accuracy means in this context
+PUSH: applied-stats/ch04_modeling_sklearn.ipynbBlock B
+2h• Final documentation sprint
+? README.md: add architecture section (text-based diagram showing models to services to routes to frontend), API endpoint table (method, path, auth required, description), WebSocket event table
+? docs/websocket_protocol.md: verify it matches the actual implemented events -- update any discrepancies
+• Pin miwa and stats-final as featured repositories on your GitHub profile
+OUTCOME: A developer who has never seen this project can read the README, understand the architecture, and run the app
+PUSH: 'docs: final README + API table + WS event table + WebSocket protocol verified'
+Day 33  --  Saturday, 25 Apr   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+Day 34  --  Sunday, 26 Apr   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+
+WEEK 6  |  27 Apr – 3 May 2026
+Goal: Stats final project complete + exam preparation begins
+Two tracks running in parallel this week: completing the Applied Stats final project notebook, and starting finals preparation. The app is done -- no new features.
+
+Day 35  --  Monday, 27 AprBlock A
+2.5h• Stats final project: begin
+• Choose dataset: your own match data exported from the deployed database is the strongest choice -- connect with psql and use COPY or SELECT to extract player and match rows
+• Section 1: data loading, inspection, missing value strategy
+• Section 2: exploratory data analysis -- at least 3 Matplotlib visualizations, each with a written interpretation paragraph
+OUTCOME: Notebook sections 1 and 2 are complete, polished, and readable by someone who has not seen your data
+PUSH: stats-final/project.ipynb (sections 1 and 2)Block B
+2h• App polish: match history on the profile page -- fetch the last 10 matches, display result, score, and ELO change for each
+• Streak logic: verify Player.streak increments on consecutive wins and resets on any loss. Check the edge case: what happens if a player's first match is a loss?
+OUTCOME: Profile page shows real match history. Streak behaves correctly at boundaries.
+PUSH: 'feat: match history on profile + streak edge case fix'
+Day 36  --  Tuesday, 28 AprBlock A
+2.5h• Stats final: Section 3 -- correlation analysis with visualization and written interpretation
+• Stats final: Section 4 -- regression analysis (linear or logistic depending on your target variable)
+PUSH: stats-final/project.ipynb (sections 3 and 4)Block B
+1.5h• Finals preparation: Applied Stats -- create a one-page formula and method reference sheet covering all midterm and final topics
+PUSH: notes/applied_stats_final_ref.md
+Day 37  --  Wednesday, 29 AprBlock A
+2.5h• Stats final: Section 5 -- hypothesis test (chi-square or t-test), interpret the p-value in plain English
+• Stats final: Section 6 -- sklearn model, train/test split, accuracy report
+PUSH: stats-final/project.ipynb (sections 5 and 6)Block B
+1.5h• Finals preparation: OOP -- write a self-test question list covering every exam topic. Answer each question from memory, then check.
+PUSH: notes/oop_final_self_test.md
+Day 38  --  Thursday, 30 AprBlock A
+2.5h• Stats final: Section 7 -- conclusions, 3 to 5 paragraphs interpreting everything found. What do the stats actually tell you about how skill affects match outcomes?
+• Polish the entire notebook: clean outputs, clear markdown explanations between every cell, logical flow from question to answer
+• Write stats-final/README.md: what the dataset is, what questions the analysis answers, how to run the notebook
+OUTCOME: The stats final notebook is submission-ready
+PUSH: stats-final/project.ipynb (complete) + stats-final/README.mdBlock B
+1.5h• Finals preparation: DAA -- trace merge sort, binary search, and memoised Fibonacci by hand on paper. Write the O() complexity for each.
+PUSH: notes/daa_final_review.md
+Day 39  --  Friday, 1 MayBlock A
+2h• Finals preparation: OOP Spring/Spring Boot -- write concise exam notes covering only what is needed to answer exam questions
+PUSH: oop/spring_exam_notes.mdBlock B
+2h• GitHub profile audit: look at your profile as a European professor seeing it for the first time
+• Add a GitHub profile README (a special README.md in a repo named the same as your username): brief bio, what you are building, what you are studying
+• Verify the deployed URL is still live and a test match completes without errors
+OUTCOME: Your GitHub profile communicates who you are and what you can build in under 30 seconds
+PUSH: 'chore: GitHub profile README + deployed URL verified + week6 review'
+Day 40  --  Saturday, 2 May   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+Day 41  --  Sunday, 3 May   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+
+WEEK 7  |  4–10 May 2026
+Goal: Final exams
+Exams are the only priority this week. Keep the minimal push habit alive -- a notebook cell, an exam reflection, or a cheatsheet file each day. Do not break the chain.
+
+Day 42  --  Mon 4 May:  Final exam (as scheduled). Minimal push: exam_reflection.md
+Day 43  --  Tue 5 May:  Final exam or review. Minimal push: notes from today's session
+Day 44  --  Wed 6 May:  Final exam or review. Minimal push: any corrections or insights from today
+Day 45  --  Thu 7 May:  Final exam or review. Minimal push: review notes
+Day 46  --  Fri 8 May:  Final exam or review. Minimal push: week7_review.md -- what went well, what did not
+
+Day 47  --  Saturday, 9 May   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+Day 48  --  Sunday, 10 May   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+
+WEEK 8  |  11–17 May 2026
+Goal: Erasmus preparation -- labs research and professor outreach
+Exams are done. Now prepare for Europe. This is time-sensitive -- professors respond better to contact made months before arrival. Each email must be personal and reference their specific work.
+
+Day 49  --  Mon 11 May:  Finalize README: architecture diagram, full API endpoint table, WebSocket event table, deployed URL. This is what professors see first.
+Day 50  --  Tue 12 May:  Research your Erasmus host university: find 3 labs working on AI, robotics, or embedded systems. Note the lab name, lead professor, and one current project.
+Day 51  --  Wed 13 May:  For each of the 3 labs: read one paper, write one specific question about their current work that you genuinely want to ask.
+Day 52  --  Thu 14 May:  Draft the outreach email template: who you are, what you built (Miwa GitHub link), why their specific lab, what you want to learn there.
+Day 53  --  Fri 15 May:  Send 2 to 3 personalised emails -- one per professor, each referencing their specific work. Write europe/outreach_log.md tracking who you emailed and when.
+
+Day 54  --  Saturday, 16 May   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+Day 55  --  Sunday, 17 May   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+
+WEEK 9  |  18–24 May 2026
+Goal: Buffer + retrospective + summer maintenance plan
+Buffer week for anything unfinished from prior weeks. Also write the 9-week retrospective and plan the summer maintenance mode.
+
+Day 56  --  Mon 18 May:  Write the 9-week retrospective: what you built, what you learned, what surprised you, what you would do differently, what to focus on in Europe.
+Day 57  --  Tue 19 May:  Summer maintenance plan: define your minimum daily routine during heavy labour -- Quran/Arabic after Fajr (30 min), light C++ reading (30 min), GitHub push with a note (10 min).
+Day 58  --  Wed 20 May:  Buffer: complete anything genuinely unfinished from Weeks 5-8. If everything is done, add more questions to the production database via psql.
+Day 59  --  Thu 21 May:  Buffer or additional Europe prep: follow up on any professor emails that have not received a reply.
+Day 60  --  Fri 22 May:  Final push: ensure the deployed URL is live, the GitHub profile is clean, and all three key deliverables (Miwa app, stats notebook, OOP coursework report) are in their final state.
+
+Day 61  --  Saturday, 23 May   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+Day 62  --  Sunday, 24 May   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
+
+Definition of done
+AreaRequirementAuthRegister and login work. Session persists across page refreshes.MatchmakingELO window starts +-15 and visibly expands. match_found fires for both players.Ghost botGhostEngine reads performance_data for known questions, uses deterministic fallback for unknown ones. Advice displays when human answers quickly. Test bot row inserted via psql.Ghost bot dataperformance_data and advice_data NOT entered manually. A separate seeding script will be built later to populate historical data.WebSocket protocolAll 9 events implemented and documented in websocket_protocol.mdScoring1 point correct. Speed tie-breaker works. ELO updates correctly after every match.Match modesRanked, Practice (no ELO), and Invite (room code) all functionalQuestionsEntered directly via psql into the production database. At least 15 across 3 categories.FrontendAll 6 pages work with consistent styling. Question images display when present.DeployedPublic URL in README. Hosted database with questions.OOP courseworkcoursework_report.md: UML + 8-concept map + 3-layer architecture + design decisionsStats portfolioproject.ipynb: EDA + correlation + regression + hypothesis test + sklearn model + written conclusionsDocumentationREADME with API table + WS event table, websocket_protocol.md, complexity analysis, CONTRIBUTING.md
+
+Daily push rule: during exams or summer labour, push only a notebook cell, a markdown note, or a daily reflection. Weekends are always free -- never push out of guilt on a Saturday or Sunday. One unbroken chain of weekday commits from today to your Erasmus departure is your proof of work.
+Miwa  |  Learning Roadmap  |  samarbaike  |  Mon-Fri only  |  p. 1
+
