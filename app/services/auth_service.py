@@ -3,6 +3,7 @@ from app.schemas.user import UserRegister
 from app.core.security import Hasher
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+
 class AuthService:
     async def register(self, session: Session, user_in: UserRegister):
         existing_user = session.query(Player).filter(Player.email == user_in.email).first()
