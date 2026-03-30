@@ -7,7 +7,7 @@ class AuthService:
     async def register(self, session: Session, user_in: UserRegister):
         existing_user = session.query(Player).filter(Player.email == user_in.email).first()
 
-        if existing_user == None:
+        if existing_user is None:
             hashed_pw = Hasher.get_password_hash(user_in.password)
 
             new_player = Player(username = user_in.username, email = user_in.email, password_hash = hashed_pw)
