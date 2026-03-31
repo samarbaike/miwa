@@ -28,4 +28,4 @@ This document records the current repository's alignment with **miwa_roadmap_v3.
    - `applied-stats/ch02_indexing.ipynb` (Day 4) and `applied-stats/ch02_ranking.ipynb` (Day 7).
 2. Harden Day 7 auth responses: enable ORM serialization on `UserResponse` (e.g., `model_config = {"from_attributes": True}`) to ensure register/login responses succeed.
 
-This checklist can guide the next steps to reach full compliance for the first seven roadmap days.***
+This checklist can guide the next steps to reach full compliance for the first seven roadmap days.
