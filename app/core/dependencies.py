@@ -27,3 +27,4 @@ def get_current_player(session_id: str = Cookie(None), db: Session = Depends(get
     if player is None:
         raise HTTPException(status_code=401, detail="User no longer exists")
     return player
+#ProdctionTest
