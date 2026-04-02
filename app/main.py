@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import auth
+from app.routes import auth, user
 from app.database import engine, Base
 
 from app.models.user import Player
@@ -12,6 +12,7 @@ print("INFO:     Tables created successfully!")
 app = FastAPI()
 
 app.include_router(auth.router)
+app.include_router(user.router)
 
 @app.get("/")
 async def root():
