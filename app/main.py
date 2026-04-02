@@ -11,8 +11,7 @@ print("INFO:     Tables created successfully!")
 
 app = FastAPI()
 
-app.include_router(auth.router)
-app.include_router(user.router)
+app.include_router(auth.router, user.router)
 
 @app.get("/")
 async def root():

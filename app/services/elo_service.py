@@ -9,4 +9,3 @@ class EloService:
         new_loser = round(loser_rank + 32*(0 - expected_l))
         
         return new_winner, new_loser
-                      
