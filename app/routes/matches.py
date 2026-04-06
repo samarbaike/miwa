@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.services.match_services import MatchService
+from app.services.match_service import MatchService
 from app.core.dependencies import get_current_player
-from app.models.player import Player
+from app.models.user import Player
 from app.models.match import Match
 
 
