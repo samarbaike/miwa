@@ -6,7 +6,7 @@ from sqlalchemy.sql import func
 class BaseUser(Base):
     __abstract__ = True 
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True, unique=True)
     username = Column(String(50), nullable=False, unique=True)
     email = Column(String(100), nullable=False, unique=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -16,7 +16,7 @@ class Player(BaseUser):
     __tablename__ = "players"
     
     password_hash = Column(String(255), nullable=False)
-    rank = Column(Integer, default=110) 
+    elo = Column(Integer, default=110) 
     wins = Column(Integer, default=0)
     streak = Column(Integer, default=0)
     total_matches = Column(Integer, default=0)

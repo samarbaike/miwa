@@ -16,11 +16,11 @@ class UserResponse(BaseModel):
     id: int = Field(gt=0)
     username: str = Field(min_length=5, max_length=50)
     email: EmailStr
-    rank: int = Field()
+    elo: int = Field()
 
 class UserStats(BaseModel):
 
-    rank: int
+    elo: int
     wins: int = Field(ge=0)
     streak: int = Field(ge=0)
     total_matches: int = Field(ge=0)

@@ -1,4 +1,4 @@
-from fastapi import WebSocket, WebSocketException, status
+from fastapi import WebSocket
 
 
 class ConnectionManager:

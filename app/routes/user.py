@@ -24,6 +24,6 @@ def get_user_stats(user_id: int, db: Session = Depends(get_db)):
 
 @router.get("/api/leaderboard")
 def get_leaderboard(db: Session = Depends(get_db)):
-    top_20 = db.query(Player).order_by(Player.rank.desc()).limit(20).all()
+    top_20 = db.query(Player).order_by(Player.elo.desc()).limit(20).all()
     return top_20
     
