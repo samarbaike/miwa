@@ -6,13 +6,12 @@ from app.routes import auth, user,  matches, ws
 from app.database import engine, Base
 from app.models.user import Player
 from app.models.session import SessionTable
-from app.services.matchmaking_service import MatchmakingPool
+from app.services.matchmaking_service import MatchmakingPool, miwa_pool
 
 print("INFO:     Connecting to Supabase...")
 Base.metadata.create_all(bind=engine)
 print("INFO:     Tables created successfully!")
 
-miwa_pool = MatchmakingPool()
 
 async def run_matchmaking():
     while True:
