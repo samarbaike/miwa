@@ -24,7 +24,18 @@ def get_match_status(id: int, db: Session=Depends(get_db)):
     return match
 
 @router.post("/api/matchmaking/join")
-def matchmaking(category: str, current_player: Player = Depends(get_current_player)):
+def matchmaking(category: str, current_player: Player = Depends(get_current_player), db: Session = Depends(get_db)):
+    #1st guard
+    for player in miwa_pool.q:
+        if player.get_id() == current_player.id:
+            raise HTTPException(status_code=400, detail="Oyunchu echak ele kutuu bolmosundo")
+    
+    #2nd guard
+    exists = db.query(Match).filter(Match.status == "active", (current_player.id == Match.player1_id) | (current_player.id == Match.player2_id)).first()
+    if exists is not None:
+        raise HTTPException(status_code=400, detail="Oyunchu echak ele oyunda")
+    
+    
     player = WaitingPlayer(current_player, category)
     miwa_pool.enqueue(player)
     match = miwa_pool.try_pair()
