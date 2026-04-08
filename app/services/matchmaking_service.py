@@ -10,7 +10,8 @@ class WaitingPlayer:
         self.elo_window = elo_window
         if time_joined is None:
             self.time_joined = datetime.datetime.now(datetime.UTC)
-        self.time_joined = time_joined
+        else: 
+            self.time_joined = time_joined
 
     def expand_elo_window(self):
         self.elo_window+=5
@@ -33,12 +34,18 @@ class MatchmakingPool:
                 return True
         return False
        
-    def try_pair(d: deque):
-        if len(d)<2:
+    def try_pair(self):
+        if len(self.q)<2:
             return None
         
-        for A, B in d:
-            if abs(A.elo - B.elo) <= A.window and abs(A.elo - B.elo) <= B.elo_window:
-
-    def tick(d: deque):
-        waiting_player.expand_elo_window(d)
+        A = self.q[0]
+        for B in list(self.q)[1:]:
+            if abs(A.player.elo - B.player.elo) <= A.elo_window and abs(A.player.elo - B.player.elo) <= B.elo_window and A.category == B.category:
+                self.q.remove(A)
+                self.q.remove(B)
+                return (A, B)
+        return None
+    
+    def tick(self):
+        for player in list(self.q):
+            player.expand_elo_window()
