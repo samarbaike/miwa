@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field, EmailStr
+from typing import Optional
 
 class UserRegister(BaseModel):
     
@@ -24,3 +25,7 @@ class UserStats(BaseModel):
     wins: int = Field(ge=0)
     streak: int = Field(ge=0)
     total_matches: int = Field(ge=0)
+
+class UserUpdate(BaseModel):
+
+    username: Optional[str] = Field(min_length=5, max_length=50)
