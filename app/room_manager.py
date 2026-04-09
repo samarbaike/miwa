@@ -26,8 +26,8 @@ class RoomManager:
             for ws in self.active_connections[match_id].values():
                 await ws.send_json(message)
     
-    """async def send_to(self, match_id: int, player_id: int, message: dict):
+    async def send_to(self, match_id: int, player_id: int, message: dict):
         if match_id in self.active_connections:
             ws = self.active_connections[match_id].get(player_id)
             if ws:
-                await ws.send_json(message)"""
+                await ws.send_json(message)
