@@ -13,8 +13,6 @@ print("INFO:     Connecting to Supabase...")
 Base.metadata.create_all(bind=engine)
 print("INFO:     Tables created successfully!")
 
-run_matchmaking()
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.pool = MatchmakingPool()
@@ -22,7 +20,7 @@ async def lifespan(app: FastAPI):
     app.state.global_manager = GlobalManager()
     app.state.active_games = {}
 
-    task = asyncio.create_task(run_matchmaking(app.state.pool))
+    task = asyncio.create_task(run_matchmaking(app))
     yield
     task.cancel()
 
