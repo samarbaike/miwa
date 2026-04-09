@@ -34,7 +34,7 @@ def matchmaking(category: str,
             raise HTTPException(status_code=400, detail="Oyunchu echak ele kutuu bolmosundo")
     
     #2nd guard
-    exists = db.query(Match).filter(Match.status == "active", 
+    exists = db.query(Match).filter(Match.status == "in_progress", 
                                     (current_player.id == Match.player1_id) | (current_player.id == Match.player2_id)).first()
     if exists is not None:
         raise HTTPException(status_code=400, detail="Oyunchu echak ele oyunda")
