@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.services.match_service import MatchService
 from app.core.dependencies import get_current_player
 from app.models.user import Player
-from app.models.match import Match
-from app.services.matchmaking_service import miwa_pool, WaitingPlayer
+from app.models.match import Match, MatchStatus
+from app.services.matchmaking_service import WaitingPlayer
 
 router = APIRouter()
 
@@ -25,24 +25,29 @@ def get_match_status(id: int, db: Session=Depends(get_db)):
     return match
 
 @router.post("/api/matchmaking/join")
-def matchmaking(category: str, 
+def matchmaking(request: Request,
+                category: str, 
                 current_player: Player = Depends(get_current_player), 
                 db: Session = Depends(get_db)):
+    
+    #initializing MatchmakingPool from app.state
+    pool = request.app.state.pool
+
     #1st guard
-    for player in miwa_pool.q:
+    for player in pool.q:
         if player.get_id() == current_player.id:
             raise HTTPException(status_code=400, detail="Oyunchu echak ele kutuu bolmosundo")
     
     #2nd guard
-    exists = db.query(Match).filter(Match.status == "in_progress", 
+    exists = db.query(Match).filter(Match.status == MatchStatus.IN_PROGRESS, 
                                     (current_player.id == Match.player1_id) | (current_player.id == Match.player2_id)).first()
     if exists is not None:
         raise HTTPException(status_code=400, detail="Oyunchu echak ele oyunda")
     
     
     player = WaitingPlayer(current_player, category)
-    miwa_pool.enqueue(player)
-    match = miwa_pool.try_pair()
+    pool.enqueue(player)
+    match = pool.try_pair()
     if match is None:
         return {"status":"searching", 
                 "message":"Kutuu bolmosuno koshtuk. Ataandash kutuudobuz."}
