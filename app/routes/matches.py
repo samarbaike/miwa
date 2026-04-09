@@ -5,7 +5,7 @@ from app.database import get_db
 from app.services.match_service import MatchService
 from app.core.dependencies import get_current_player
 from app.models.user import Player
-from app.models.match import Match, MatchStatus
+from app.models.match import Match
 from app.services.matchmaking_service import miwa_pool, WaitingPlayer
 
 router = APIRouter()
@@ -34,7 +34,7 @@ def matchmaking(category: str,
             raise HTTPException(status_code=400, detail="Oyunchu echak ele kutuu bolmosundo")
     
     #2nd guard
-    exists = db.query(Match).filter(Match.status == MatchStatus.IN_PROGRESS, 
+    exists = db.query(Match).filter(Match.status == "in_progress", 
                                     (current_player.id == Match.player1_id) | (current_player.id == Match.player2_id)).first()
     if exists is not None:
         raise HTTPException(status_code=400, detail="Oyunchu echak ele oyunda")
