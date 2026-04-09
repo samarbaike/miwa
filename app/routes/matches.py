@@ -47,10 +47,7 @@ def matchmaking(request: Request,
     
     player = WaitingPlayer(current_player, category)
     pool.enqueue(player)
-    match = pool.try_pair()
-    if match is None:
-        return {"status":"searching", 
-                "message":"Kutuu bolmosuno koshtuk. Ataandash kutuudobuz."}
-    else:
-        return {"status":"match_found", 
-                "message":f"{match[1].player.username} menen oiun bashtaluuda."}
+
+    return {"status":"searching", 
+            "message":"Kutuu bolmosuno koshtuk. Ataandash kutuudobuz."}
+    

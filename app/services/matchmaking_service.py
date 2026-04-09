@@ -1,4 +1,3 @@
-from app.models.user import Player
 import datetime
 from collections import deque
 
