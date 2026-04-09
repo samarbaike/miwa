@@ -15,7 +15,7 @@
 - `prompt.txt`: guidance note for assistants on how to support development flow.
 
 ### Docs
-- `docs/rest_checklist.md`: REST smoke-test table with only two currently listed endpoints (`create-invite`, `get match by id`), leaving many rows empty.
+- `docs/rest_checklist.md`: REST smoke-test table with only two currently listed endpoints (`create-invite`, `get match by ID`), leaving many rows empty.
 
 ### App package markers
 - `app/__init__.py`: empty package marker.
@@ -86,7 +86,7 @@ Status: **Compliant**
 
 ### Day 9 (Block B)
 Planned:
-- `GET /api/match/:id`
+- `GET /api/match/:ID`
 - `POST /api/matches/create-invite`
 - complete `docs/rest_checklist.md` for all built endpoints
 
