@@ -4,20 +4,20 @@ from contextlib import asynccontextmanager
 
 from app.routes import auth, user,  matches, ws
 from app.database import engine, Base
-from app.models.user import Player
-from app.models.session import SessionTable
-from app.services.matchmaking_service import MatchmakingPool, miwa_pool
+from app.room_manager import RoomManager
+from app.global_manager import GlobalManager
+from app.services.matchmaking_service import MatchmakingPool
 
 print("INFO:     Connecting to Supabase...")
 Base.metadata.create_all(bind=engine)
 print("INFO:     Tables created successfully!")
 
 
-async def run_matchmaking():
+async def run_matchmaking(pool: MatchmakingPool):
     while True:
-        miwa_pool.tick()
+        pool.tick()
         while True:
-            match = miwa_pool.try_pair()
+            match = pool.try_pair()
             if match is None:
                 break
             print(f"Match found in background: {match[0].player.username} and {match[1].player.username}")
@@ -25,9 +25,15 @@ async def run_matchmaking():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    asyncio.create_task(run_matchmaking())
-    yield
+    app.state.pool = MatchmakingPool()
+    app.state.room_manager = RoomManager()
+    app.state.global_manager = GlobalManager()
+    app.state.active_games = {}
 
+    task = asyncio.create_task(run_matchmaking(app.state.pool))
+    yield
+    task.cancel()
+    
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(auth.router)
