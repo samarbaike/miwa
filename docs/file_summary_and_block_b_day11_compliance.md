@@ -95,7 +95,7 @@ Status: **Partially compliant**
 - `docs/rest_checklist.md` is **not complete** (only two rows populated; expected “every endpoint built so far”).
 
 Potential implementation mismatch:
-- `MatchService.create_invite_match` sets `status="WAITING"` while model enum values are lowercase (`waiting`, `in_progress`, `completed`).
+- `MatchService.create_invite_match` currently sets `status="WAITING"` (uppercase string), while the declared enum values are lowercase (`waiting`, `in_progress`, `completed`), so this is a likely mismatch.
 - `Match` model requires `mode` non-null, but invite creation does not set it.
 
 ### Day 10 (Block B)
@@ -121,7 +121,7 @@ Status: **Mostly compliant**
 - Background tick task implemented in `app/main.py` via `asyncio.create_task(run_matchmaking())` and `await asyncio.sleep(10)`.
 
 Potential logic mismatch:
-- “already in active match” guard checks `Match.status == "active"`, but model statuses are enum values (`waiting`, `in_progress`, `completed`). This may fail to enforce intended guard.
+- “already in active match” guard checks `Match.status == "active"`, but `"active"` is not one of the declared enum values (`waiting`, `in_progress`, `completed`; likely intended runtime value is `in_progress`). This may fail to enforce intended guard.
 
 ---
 
