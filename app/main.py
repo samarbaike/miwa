@@ -7,21 +7,13 @@ from app.database import engine, Base
 from app.room_manager import RoomManager
 from app.global_manager import GlobalManager
 from app.services.matchmaking_service import MatchmakingPool
+from app.services.run_mm_service import run_matchmaking
 
 print("INFO:     Connecting to Supabase...")
 Base.metadata.create_all(bind=engine)
 print("INFO:     Tables created successfully!")
 
-
-async def run_matchmaking(pool: MatchmakingPool):
-    while True:
-        pool.tick()
-        while True:
-            match = pool.try_pair()
-            if match is None:
-                break
-            print(f"Match found in background: {match[0].player.username} and {match[1].player.username}")
-        await asyncio.sleep(10)
+run_matchmaking()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,7 +25,7 @@ async def lifespan(app: FastAPI):
     task = asyncio.create_task(run_matchmaking(app.state.pool))
     yield
     task.cancel()
-    
+
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(auth.router)
