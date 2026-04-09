@@ -61,7 +61,7 @@
 
 ## Block B compliance analysis (Day 7 to Day 11)
 
-## Day 7 (Block B)
+### Day 7 (Block B)
 Planned:
 - `POST /api/register`, `POST /api/login` as thin handlers calling `AuthService`
 - cookie-based session creation
@@ -75,7 +75,7 @@ Status: **Mostly compliant**
 Notes:
 - `register` checks existing email only (not username conflict), but this is not explicitly required by Day 7 text.
 
-## Day 8 (Block B)
+### Day 8 (Block B)
 Planned:
 - `EloService.calculate_new_ratings`
 - user profile/stats/leaderboard routes
@@ -84,7 +84,7 @@ Status: **Compliant**
 - Elo service exists in `app/services/elo_service.py` with expected formula structure.
 - `GET /api/user/{id}`, `GET /api/user/{id}/stats`, `GET /api/leaderboard` exist in `app/routes/user.py`.
 
-## Day 9 (Block B)
+### Day 9 (Block B)
 Planned:
 - `GET /api/match/:id`
 - `POST /api/matches/create-invite`
@@ -98,7 +98,7 @@ Potential implementation mismatch:
 - `MatchService.create_invite_match` sets `status="WAITING"` while model enum values are lowercase (`waiting`, `in_progress`, `completed`).
 - `Match` model requires `mode` non-null, but invite creation does not set it.
 
-## Day 10 (Block B)
+### Day 10 (Block B)
 Planned:
 - `ConnectionManager` with `connect`, `disconnect`, `broadcast`, `send_to`
 - `WSEvents` class with **9** event names (8 spec + `match_found`)
@@ -109,7 +109,7 @@ Status: **Partially compliant**
 - `ConnectionManager` exists but **missing `send_to`** (`app/websocket_manager.py`).
 - `WSEvents` exists but has **6 constants**, not planned 9 (`app/core/events.py`).
 
-## Day 11 (Block B)
+### Day 11 (Block B)
 Planned:
 - `WaitingPlayer` + `MatchmakingPool` with enqueue/dequeue/try_pair/tick
 - `POST /api/matchmaking/join`
