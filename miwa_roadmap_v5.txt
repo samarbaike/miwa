@@ -59,7 +59,7 @@ Goal: All REST routes complete + WebSocket foundation + Matchmaking service
 This is the week everything connects. By Friday you will have a fully working REST API (all endpoints testable in /docs) and the WebSocket connection layer running. Routes start today on Day 7.
 
 RESOURCES  --  Before Day 7 -- FastAPI routes and dependency injectionTypeResourceWhereOfficial tutorialFastAPI -- Path Parameters, Request Body, Dependencies (sections 6-12)fastapi.tiangolo.com/tutorialReadFastAPI Depends() -- how dependency injection works for authfastapi.tiangolo.com/tutorial/dependenciesReadHTTP cookies in FastAPI -- reading and setting session cookiesfastapi.tiangolo.com/tutorial/cookie-paramsConceptA route handler should do almost nothing itself: receive input, call a service, return output. All logic lives in services.Re-read the folder structure section of this plan
-Day 7  --  Monday, 30 MarBlock A
+Day 7  --  Monday, 30 Mar  (COMPLETED)Block A
 2h• Applied Stats: sorting and ranking (02.06 to 02.07) -- sort_values, rank, nlargest on a player-like dataset
 OUTCOME: You can rank a DataFrame by a numeric column and extract the top N rows
 PUSH: applied-stats/ch02_ranking.ipynbBlock B
@@ -70,7 +70,7 @@ PUSH: applied-stats/ch02_ranking.ipynbBlock B
 • Test the full flow in /docs: register a new user, login, confirm the session row appears in your database
 OUTCOME: You can register, login, and access a protected route using only the session cookie as proof of identity
 PUSH: 'feat: auth routes (register, login) + session cookie + get_current_player dependency'
-Day 8  --  Tuesday, 31 MarBlock A
+Day 8  --  Tuesday, 31 Mar  (COMPLETED)Block A
 2h• DAA: recursion -- write recursive factorial, sum of a list, and binary search
 • Then implement memoised Fibonacci and compare its runtime against the naive recursive version
 OUTCOME: You can explain the call stack, base case, and why naive Fibonacci is exponential while memoised is linear
@@ -84,7 +84,7 @@ PUSH: daa/recursion_and_dp.py + daa/complexity_notes.mdBlock B
 ? GET /api/leaderboard -- top 20 players ordered by rank descending
 OUTCOME: Leaderboard returns real data, ELO formula gives correct values when traced by hand
 PUSH: 'feat: EloService + user routes (profile, stats, leaderboard)'
-Day 9  --  Wednesday, 1 AprBlock A
+Day 9  --  Wednesday, 1 Apr  (PARTIAL)Block A
 2h• OOP coursework: mirror your Java subclassing assignment in Python -- BaseUser, Player, Admin with method overriding
 • Write this as a completely standalone script with no FastAPI imports -- it is a pure OOP demonstration for your professor
 OUTCOME: A self-contained file that clearly shows inheritance, encapsulation, and method overriding
@@ -97,7 +97,7 @@ PUSH: oop/subclassing_demo.pyBlock B
 OUTCOME: Every REST endpoint works correctly. The checklist is complete and accurate.
 PUSH: 'feat: match routes (load + invite) + REST smoke test + endpoint checklist'
 RESOURCES  --  Before Day 10 -- WebSockets: the mental modelTypeResourceWhereWatch firstWebSockets in 100 Seconds by FireshipYouTube: search 'Fireship WebSocket'Official docsFastAPI WebSockets tutorialfastapi.tiangolo.com/advanced/websocketsReadHTTP vs WebSocket -- when and why to use eachably.com/topic/http-vs-websocketCritical conceptA WebSocket is a persistent two-way channel, not a request-response pair. Think phone call, not letter. Both sides can send at any time.Re-read the Fireship description if unclearOfficial docsPython asyncio -- event loop, async/await, coroutinesdocs.python.org/asyncioVideo (25 min)Async Python and asyncio explained simply by mCodingYouTube: search 'mCoding asyncio'
-Day 10  --  Thursday, 2 AprBlock A
+Day 10  --  Thursday, 2 Apr  (PARTIAL)Block A
 2h• Applied Stats: missing data (03.02) -- isnull, fillna, dropna, and choosing the right strategy
 OUTCOME: You can identify missing values, explain three ways to handle them, and choose between them based on context
 PUSH: applied-stats/ch03_missing_data.ipynbBlock B
@@ -106,13 +106,14 @@ PUSH: applied-stats/ch03_missing_data.ipynbBlock B
 ? Methods: connect (add a socket to a match group), disconnect (remove it cleanly), broadcast (send to all in a match), send_to (send to one specific socket)
 ? Every send method must be async
 • app/core/events.py: a class with class attributes for all 9 WebSocket event names (8 spec events + match_found). Using a class means a typo causes an immediate error.
+NOTE (gap): As of Day 11 the current codebase has 6 constants in WSEvents, not the required 9. The 3 missing constants must be added before Day 14 work begins -- you cannot reference event names that do not exist in the class. Cross-check against your websocket_protocol.md event table (join_match, player_joined, match_update, question_start, submit_answer, player_answered, question_results, match_ended, match_found) and add any that are absent. Also confirm ConnectionManager has send_to implemented -- it was missing as of the Day 11 audit.
 • app/routes/ws.py: WebSocket endpoint at /ws/match/{match_id} -- for now just accept connections and echo whatever it receives
 • Test: open two browser tabs, use the browser console JavaScript WebSocket API to connect to the same match_id. Confirm both receive a message when you broadcast.
 NOTE: You cannot test WebSockets in /docs. Use the browser console or install websocat in WSL.
 OUTCOME: Two browser connections to the same match_id both receive a server broadcast
 PUSH: 'feat: ConnectionManager + WSEvent constants + WebSocket echo endpoint'
 RESOURCES  --  Before Day 11 -- asyncio background tasks for matchmakingTypeResourceWhereOfficial docsFastAPI Background Tasksfastapi.tiangolo.com/tutorial/background-tasksOfficial docsasyncio.create_task -- running coroutines in the backgrounddocs.python.org/asyncio/tasksConceptThe matchmaking tick (expanding ELO windows) must run every 10 seconds regardless of incoming requests. A background task is how you do this in FastAPI without blocking the server.Think through how asyncio.sleep fits into an infinite loop
-Day 11  --  Friday, 3 AprBlock A
+Day 11  --  Friday, 3 Apr  (PARTIAL)Block A
 2h• Applied Stats: merge and join (03.05) -- merge on key, left/inner/right join differences
 OUTCOME: You can join two DataFrames on a shared key and explain what happens to rows that do not match in each join type
 PUSH: applied-stats/ch03_merge.ipynbBlock B
@@ -121,7 +122,9 @@ PUSH: applied-stats/ch03_merge.ipynbBlock B
 ? MatchmakingPool: manages the waiting list. Your Queue from Day 4 is the same concept -- apply it here.
 ? MatchmakingPool needs: enqueue (add player), dequeue (remove by ID), try_pair (check mutual window: A fits B's window AND B fits A's window -- both required), tick (expand all windows)
 • app/routes/matchmaking.py: POST /api/matchmaking/join -- validate player is not already in an active match, create WaitingPlayer, add to pool
+NOTE (enum mismatch): The active-match guard currently checks Match.status == "active" but your declared enum values are waiting, in_progress, and completed -- "active" does not exist and the guard silently fails. The correct value to check is in_progress. Likewise, create_invite_match currently sets status="WAITING" (uppercase) but the enum expects lowercase "waiting". Fix both before Day 14 or players will be able to enter matchmaking while already in a match.
 • Start a background asyncio task that calls pool.tick() every 10 seconds when the app starts
+NOTE (singleton): MatchmakingPool must be a single shared instance for the entire app lifetime -- do NOT instantiate it inside a route handler (each request would get a fresh empty pool). Initialise it once inside the lifespan startup block and store it on app.state.pool. Access it in routes via request.app.state.pool. Same rule applies to ConnectionManager: store on app.state.connection_manager. See the Gemini/Day 11 architecture note for the full lifespan wiring pattern.
 OUTCOME: You can trace the mutual window check by hand and explain why both conditions must be true to prevent unfair matches
 PUSH: 'feat: MatchmakingPool with ELO window expansion + join route + background tick'
 Day 12  --  Saturday, 4 Apr   |   FREE DAY  --  Rest. Quran / Arabic. Outdoors. No screens.
@@ -135,10 +138,11 @@ Day 14  --  Monday, 6 AprBlock A
 2h• Applied Stats: GroupBy and Aggregation (03.06) -- groupby, agg, named aggregation, transform
 OUTCOME: You can group a DataFrame by a categorical column and compute multiple different aggregates in one call
 PUSH: applied-stats/ch03_groupby.ipynbBlock B
-2h• app/services/game_service.py: GameService class tracking live match state in memory
+2h• app/services/game_service.py: GameService class tracking live match state in memory -- one instance per active match, stored in app.state.active_games (a dict keyed by match_id). If five matches run simultaneously, five independent GameService instances must exist; sharing state between two matches would be a very hard bug to find.
 ? Think carefully about what data it needs to hold: which question is active, what answers have arrived, current scores for both players
-? It needs to detect when both players have answered or when the 30-second timer expires
+? It needs to detect when both players have answered or when the 30-second timer expires -- the timer MUST be server-side: an asyncio.sleep(30) coroutine started by GameService when a question begins. When it fires, GameService treats it identically to receiving a null answer from that player. Client-side countdowns are cosmetic only and can be manipulated.
 ? Design the class interface (what methods it exposes) before writing any method bodies
+NOTE (question selection): Questions must be selected at match creation, not at question delivery time. When the match row is created (after a pair is found), query the database for N questions filtered by the category preferences of both WaitingPlayers and store their IDs in questions_data on the Match record. Every question_start event reads from that pre-selected list by index. This prevents a question inserted mid-match from changing what gets served. GhostEngine also requires the question IDs to be known before it starts, so it can pre-check which questions it has performance_data for.
 • Wire the WebSocket endpoint for the join_match event: when a client connects, add to ConnectionManager, broadcast match_update and player_joined to the opponent
 • When both players are connected to the same match: server sends question_start with the first question (index 0), fetching the question data from the database by the question IDs stored in the match
 OUTCOME: Two players connecting to the same match both automatically receive the first question
@@ -151,6 +155,7 @@ PUSH: applied-stats/ch03_pivot_strings.ipynbBlock B
 • Handle the submit_answer event: receive questionIndex, answerIndex, timeMs from the client
 ? Immediately broadcast player_answered to the opponent -- tells them the other person answered, but does NOT reveal what they chose
 ? Record the answer in GameService
+NOTE (asyncio concurrency): FastAPI and asyncio are single-threaded, so two answers arriving at the same millisecond do not execute simultaneously -- they queue in the event loop. However if you use await inside your answer handler (e.g. to write to the database), the event loop can switch to processing the second answer before the first has finished. Safe pattern: record both answers in memory first (no await), then process and persist after both are recorded. This is why GameService holds state in memory before touching the database.
 • When both players have answered (or 30-second timer fires): determine who was correct, who was faster if tied, update scores
 • Broadcast question_results to both players: correct answer index, updated scores for both players
 OUTCOME: You can trace one full question round from two client submissions to both receiving the results
@@ -174,6 +179,7 @@ OUTCOME: You can explain the difference between memoisation (top-down, recursive
 PUSH: daa/dp_tabulation.pyBlock B
 2h• app/services/bot_service.py: GhostEngine class
 ? GhostEngine wraps a Bot database object and gives it behaviour
+NOTE (sequencing): GhostEngine reads performance_data using question IDs as keys. This means question selection (see Day 14 note) must happen before GhostEngine starts. Pass the pre-selected question ID list into GhostEngine at construction so it can pre-check which questions it has data for and which will hit the fallback. Do not let GhostEngine query the database for questions itself -- it only reads from the already-selected list.
 ? Core method (async): given a question object, look up the question's ID in the bot's performance_data JSON
 ? If found: read the exact time_ms and answer_index. Wait for time_ms milliseconds using asyncio.sleep. Then return that answer_index.
 ? If not found (fallback): use your pre-decided strategy. Document it clearly in a comment. Do not use random().

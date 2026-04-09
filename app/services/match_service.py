@@ -1,6 +1,6 @@
 import random
 import string
-from app.models.match import Match
+from app.models.match import Match, MatchStatus, MatchMode
 
 class MatchService:
     
@@ -13,7 +13,8 @@ class MatchService:
     def create_invite_match(db, user_id):
         room_code = MatchService._generate_room_code()
         new_invite_match = Match(player1_id=user_id,
-                                 status="WAITING",
+                                 status=MatchStatus.WAITING,
+                                 mode = MatchMode.INVITE,
                                  invite_code=room_code)
         db.add(new_invite_match)
         db.commit()

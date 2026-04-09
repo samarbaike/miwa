@@ -1,4 +1,4 @@
-In the file miwa_roadmap_v3.txt there is my dev plan, you can start from the today's date. There's only couple of rules you need keep in mind:
+In the file miwa_roadmap_v5.txt there is my dev plan, you can start from the today's date. There's only couple of rules you need keep in mind:
 
 - Never give me ready copy-paste code
 - This is my first time developing app of this kind, 
