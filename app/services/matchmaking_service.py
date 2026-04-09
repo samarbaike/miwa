@@ -49,5 +49,3 @@ class MatchmakingPool:
     def tick(self):
         for player in list(self.q):
             player.expand_elo_window()
-
-miwa_pool = MatchmakingPool()
