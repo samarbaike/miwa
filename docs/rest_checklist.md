@@ -11,3 +11,5 @@
 |`/api/user/{user_id}`|`DELETE`|Header: Cookie(Session), Path: id|`{"message": "Oyunchu ochuruldu"}`|Pass|
 |`/api/user/{user_id}/stats`|`GET`|Path: id|User object|Pass|
 |`/api/leaderboard`|`GET`|None|List of User objects|Pass|
+|`/api/match/{id}`|`GET`|Path: id|Match object|Pass|
+|`/api/matchmaking/join`|`POST`|Header: Cookie(Session), Path: category|`{"status": "searching","message": "Kutuu bolmosuno koshtuk. Ataandash kutuudobuz."}`|Pass|
