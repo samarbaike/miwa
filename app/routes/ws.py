@@ -25,3 +25,21 @@ async def websocket_endpoint(websocket: WebSocket, match_id: int, player_id:int)
     except WebSocketDisconnect:
         # 3. If the player's internet drops, tell the manager to disconnect them
         room_manager.disconnect(match_id, player_id)
+
+@router.websocket("/ws/lobby/{player_id}")
+async def lobby_websocket(websocket: WebSocket, player_id: int):
+    # 1. Accept the connection
+    await websocket.accept()
+    
+    # 2. Get the GlobalManager
+    global_manager = websocket.app.state.global_manager
+    
+    # 3. Connect the player to the global lobby
+    await global_manager.connect_player(player_id, websocket)
+    
+    try:
+        # Keep connection open waiting for server notifications (like match_found)
+        while True:
+            await websocket.receive_text() 
+    except WebSocketDisconnect:
+        global_manager.disconnect_player(player_id)

@@ -50,4 +50,19 @@ def matchmaking(request: Request,
 
     return {"status":"searching", 
             "message":"Kutuu bolmosuno koshtuk. Ataandash kutuudobuz."}
+
+
+@router.post("/api/matchmaking/cancel")
+def cancel(request: Request,
+           current_player: Player = Depends(get_current_player)):
     
+    pool = request.app.state.pool
+
+    delete = pool.dequeue(current_player.id)
+    if not delete:
+        raise HTTPException(status_code=400, detail="Oyunchu kutuu bolmosundo emes")
+    
+    return {
+        "status":"success",
+        "message":"Kutuu bolmusunon chygaryldynyz"
+    }
