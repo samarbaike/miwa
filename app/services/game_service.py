@@ -167,7 +167,31 @@ class GameService:
                 winner_id = self.player2_id
                 loser_id = self.player1_id
             else:
-                winner_id = None#how can I label draw in db, and here also
+                #in case they are supppper equal
+                winner_id = None
+                loser_id = None
+                with Session(engine) as db:
+                    winner = db.query(Player).filter(Player.id == self.player1_id).first()
+                    loser = db.query(Player).filter(Player.id == self.player2_id).first()
+
+                    winner.total_matches += 1
+                    loser.total_matches +=1
+
+                    match = db.query(Match).filter(Match.id == self.match_id).first()
+                    match.status = MatchStatus.COMPLETED
+                    match.winner_id = None
+
+                    db.commit()
+
+                await app.state.room_manager.broadcast(self.match_id, {
+                    "event":WSEvents.MATCH_ENDED,
+                    "data":{
+                        "status":"draw",
+                        "score": self.scores[self.player2_id]
+                    }
+                })
+                return
+
 
         #calculating new ELO's
         with Session(engine) as db:
@@ -184,7 +208,7 @@ class GameService:
 
             loser.streak = 0
             loser.elo = result[1]
-            loser.total_match += 1
+            loser.total_matches += 1
 
             #update DB for Match
             match = db.query(Match).filter(Match.id == self.match_id).first()
@@ -192,22 +216,22 @@ class GameService:
             match.winner_id = winner_id
 
             db.commit()
-            db.refresh()
 
         await app.state.room_manager.send_to(self.match_id, winner_id, {
-            "status" : "win",
+            "event" : WSEvents.MATCH_ENDED,
             "data" : {
-                "score" : self.score[winner_id],
+                "status":"win",
+                "score" : self.scores[winner_id],
                 "elo" : result[0]
             }
         })
         await app.state.room_manager.send_to(self.match_id, loser_id, {
-            "status" : "lose",
+            "event" : WSEvents.MATCH_ENDED,
             "data" : {
-                "score" : self.score[loser_id],
+                "status":"lose",
+                "score" : self.scores[loser_id],
                 "elo" : result[1]
             }
         })
 
         del app.state.active_games[self.match_id]
-
