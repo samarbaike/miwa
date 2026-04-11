@@ -6,6 +6,8 @@ from app.database import engine
 from app.models.question import MultipleChoice
 from app.core.events import WSEvents
 from app.models.user import Player
+from app.services.elo_service import EloService
+from app.models.match import Match, MatchStatus
 
 app = FastAPI()
 
@@ -82,7 +84,6 @@ class GameService:
         #starting fresh TIMER task
         self.question_timer_task = asyncio.create_task(self._question_timer(app))
 
-
     async def _question_timer(self, app):
         try:
             await asyncio.sleep(30)
@@ -149,3 +150,64 @@ class GameService:
             await self.start_question(app)
 
     async def _end_match(self, app):
+
+        if self.scores[self.player1_id] > self.scores[self.player2_id]:
+            winner_id = self.player1_id
+            loser_id = self.player2_id
+        elif self.scores[self.player2_id] > self.scores[self.player1_id]:
+            winner_id = self.player2_id
+            loser_id = self.player1_id
+        else:
+            p1_time_taken = sum(self.answer_history[self.player1_id])
+            p2_time_taken = sum(self.answer_history[self.player2_id])
+            if p1_time_taken<p2_time_taken:
+                winner_id = self.player1_id
+                loser_id = self.player2_id
+            elif p2_time_taken<p1_time_taken:
+                winner_id = self.player2_id
+                loser_id = self.player1_id
+            else:
+                winner_id = None#how can I label draw in db, and here also
+
+        #calculating new ELO's
+        with Session(engine) as db:
+            winner = db.query(Player).filter(Player.id == winner_id).first()
+            loser = db.query(Player).filter(Player.id == loser_id).first()
+        
+            result = EloService.calculate_new_ratings(winner.elo, loser.elo)
+            
+            #update the damn DB for both players
+            winner.elo = result[0]
+            winner.wins += 1
+            winner.streak += 1
+            winner.total_matches += 1
+
+            loser.streak = 0
+            loser.elo = result[1]
+            loser.total_match += 1
+
+            #update DB for Match
+            match = db.query(Match).filter(Match.id == self.match_id).first()
+            match.status = MatchStatus.COMPLETED
+            match.winner_id = winner_id
+
+            db.commit()
+            db.refresh()
+
+        await app.state.room_manager.send_to(self.match_id, winner_id, {
+            "status" : "win",
+            "data" : {
+                "score" : self.score[winner_id],
+                "elo" : result[0]
+            }
+        })
+        await app.state.room_manager.send_to(self.match_id, loser_id, {
+            "status" : "lose",
+            "data" : {
+                "score" : self.score[loser_id],
+                "elo" : result[1]
+            }
+        })
+
+        del app.state.active_games[self.match_id]
+
