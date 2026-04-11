@@ -86,7 +86,7 @@ class GameService:
 
     async def _question_timer(self, app):
         try:
-            await asyncio.sleep(30)
+            await asyncio.sleep(60)
         except asyncio.CancelledError:
             return
         
@@ -130,15 +130,28 @@ class GameService:
                 self.answer_history[player_id].append(time_taken)
 
         #broadcasting results
-        await app.state.room_manager.send_to(self.match_id, self.player1_id, {
-            "event" : WSEvents.QUESTION_RESULTS,
-            "data" : f"Ataandash {self.answers_this_round[self.player2_id]["answer"]} joobun belgildedi"
-        })
+        if self.answers_this_round[self.player2_id]['answer'] is not None:
+            await app.state.room_manager.send_to(self.match_id, self.player1_id, {
+                "event" : WSEvents.QUESTION_RESULTS,
+                "data" : f"Ataandash {self.answers_this_round[self.player2_id]['answer']} joobun belgildedi"
+            })
+        else:
+            await app.state.room_manager.send_to(self.match_id, self.player1_id, {
+                "event" : WSEvents.QUESTION_RESULTS,
+                "data" : f"Ataandash joob belgilebedi"
+            })
 
-        await app.state.room_manager.send_to(self.match_id, self.player2_id, {
-            "event" : WSEvents.QUESTION_RESULTS,
-            "data" : f"Ataandash {self.answers_this_round[self.player1_id]["answer"]} joobun belgildedi"
-        })
+
+        if self.answers_this_round[self.player1_id]['answer'] is not None:
+            await app.state.room_manager.send_to(self.match_id, self.player2_id, {
+                "event" : WSEvents.QUESTION_RESULTS,
+                "data" : f"Ataandash {self.answers_this_round[self.player1_id]['answer']} joobun belgildedi"
+            })
+        else:
+            await app.state.room_manager.send_to(self.match_id, self.player2_id, {
+                "event" : WSEvents.QUESTION_RESULTS,
+                "data" : f"Ataandash joob belgilebedi"
+            })
 
         #advancing question index
         self.current_question_index+=1
@@ -190,6 +203,7 @@ class GameService:
                         "score": self.scores[self.player2_id]
                     }
                 })
+                del app.state.active_games[self.match_id]
                 return
 
 
