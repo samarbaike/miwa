@@ -35,7 +35,9 @@ class GameService:
         }
 
         #to manage who, what, when answered for specific question
-        self.answers_this_round: dict[int, dict] = {} #player_id : [answer, timestampt]
+        self.answers_this_round: dict[int, dict] = {} 
+        #player_id : {"answer" : answer,"timestamp" : timestamp}
+
 
         #backround time tick
         self.question_timer_task: asyncio.Task | None = None 
@@ -99,3 +101,34 @@ class GameService:
         if len(self.answers_this_round) == 2:
             self.question_timer_task.cancel()
             await self._resolve_question(app)
+
+    async def _resolve_question(self, app):
+        #fetch question from db by current_question_index
+        qid = self.question_ids[self.current_question_index]
+        with Session(engine) as db:
+            question = db.query(MultipleChoice).filter(MultipleChoice.id == qid).first()
+
+        #calculating scores
+        for player_id, data in self.answers_this_round.items():
+            if data["answer"] is not None and data["answer"]==question.correct_answer:
+                self.scores[player_id]+=1
+
+        #broadcasting results
+        await app.state.room_manager.send_to(self.match_id, self.player1_id, {
+            "event" : WSEvents.QUESTION_RESULTS,
+            "data" : f"Ataandash {self.answers_this_round[self.player2_id]["answer"]} joobun belgildedi"
+        })
+
+        await app.state.room_manager.send_to(self.match_id, self.player2_id, {
+            "event" : WSEvents.QUESTION_RESULTS,
+            "data" : f"Ataandash {self.answers_this_round[self.player1_id]["answer"]} joobun belgildedi"
+        })
+
+        #advancing question index
+        self.current_question_index+=1
+
+        #stop/continue
+        if self.current_question_index>=len(self.question_ids):
+            await self._end_match(app)
+        else: 
+            await self.start_question(app)
