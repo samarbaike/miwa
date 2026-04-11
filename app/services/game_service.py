@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.database import engine
 from app.models.question import MultipleChoice
 from app.core.events import WSEvents
+from app.models.user import Player
 
 app = FastAPI()
 
@@ -45,7 +46,7 @@ class GameService:
         qid = self.question_ids[self.current_question_index]
         with Session(engine) as db:
             question = db.query(MultipleChoice).filter(MultipleChoice.id == qid).first()
-            return question
+            
         
         #reset www answered for upcoming question
         self.answers_this_round = {}
@@ -70,10 +71,15 @@ class GameService:
 
 
     async def _question_timer(self, app):
-        asyncio.sleep(30)
+        try:
+            await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            return
+        
+
         for pid in [self.player1_id, self.player2_id]:
             if pid not in self.answers_this_round:
-                await handle_answer(pid, None, None, app)
+                await self.handle_answer(pid, None, None, app)
 
     async def handle_answer(self, player_id, answer, timestamp, app):
         if player_id in self.answers_this_round:
@@ -83,16 +89,13 @@ class GameService:
             "answer" : answer,
             "timestamp" : timestamp
         }
-
-        with Session(engine) as db:
-            username = db.query(Player).filter(Player.id == player_id).first()
-            return username
+          
         
         await app.state.room_manager.broadcast(self.match_id, {
             "event" : WSEvents.PLAYER_ANSWERED,
-            "data" : f"{username} joop berdi"
+            "data" : "Ataandash joop berdi"
         })
 
         if len(self.answers_this_round) == 2:
             self.question_timer_task.cancel()
-            self._resolve_question(app)
+            await self._resolve_question(app)
