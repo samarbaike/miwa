@@ -1,5 +1,5 @@
 from fastapi import WebSocket
-
+import asyncio
 
 class RoomManager:
     def __init__(self):
@@ -22,7 +22,33 @@ class RoomManager:
                 del self.active_connections[match_id]
     
     async def broadcast(self, match_id: int, message: dict):
-        if match_id in self.active_connections:
+        if match_id not in self.active_connections:
+            return
+        
+        connections = self.active_connections[match_id]
+        to_remove = []
+
+        async def safe_send(player_id, ws):
+            try:
+                await ws.send_json(message)
+            except Exception:
+                to_remove.append(player_id)
+
+        await asyncio.gather(
+            *(safe_send(pid, ws) for pid, ws in connections.items())
+        )
+            
+        #cleanup
+        for pid in to_remove:
+            del connections[pid]
+
+        if not connections:
+            del self.active_connections[match_id]    
+            
+            
+            
+            
+            
             for ws in self.active_connections[match_id].values():
                 await ws.send_json(message)
     
