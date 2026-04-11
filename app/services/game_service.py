@@ -72,8 +72,27 @@ class GameService:
     async def _question_timer(self, app):
         asyncio.sleep(30)
         for pid in [self.player1_id, self.player2_id]:
-            if pid not in self.answers_this_round.keys():
+            if pid not in self.answers_this_round:
                 await handle_answer(pid, None, None, app)
 
     async def handle_answer(self, player_id, answer, timestamp, app):
+        if player_id in self.answers_this_round:
+            return
         
+        self.answers_this_round[player_id] = {
+            "answer" : answer,
+            "timestamp" : timestamp
+        }
+
+        with Session(engine) as db:
+            username = db.query(Player).filter(Player.id == player_id).first()
+            return username
+        
+        await app.state.room_manager.broadcast(self.match_id, {
+            "event" : WSEvents.PLAYER_ANSWERED,
+            "data" : f"{username} joop berdi"
+        })
+
+        if len(self.answers_this_round) == 2:
+            self.question_timer_task.cancel()
+            self._resolve_question(app)
