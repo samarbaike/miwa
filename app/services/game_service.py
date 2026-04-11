@@ -38,3 +38,42 @@ class GameService:
 
         #backround time tick
         self.question_timer_task: asyncio.Task | None = None 
+
+    async def start_question(self, app):
+
+        #fetch question from db by current_question_index
+        qid = self.question_ids[self.current_question_index]
+        with Session(engine) as db:
+            question = db.query(MultipleChoice).filter(MultipleChoice.id == qid).first()
+            return question
+        
+        #reset www answered for upcoming question
+        self.answers_this_round = {}
+
+        #check background timer
+        if self.question_timer_task is not None:
+            self.question_timer_task.cancel()
+            self.question_timer_task = None
+
+        #broadcasting question to players
+        await app.state.room_manager.broadcast(self.match_id, {
+            "event":WSEvents.QUESTION_START,
+            "data": {
+                "q_index":self.current_question_index,
+                "q_text":question.body,
+                "q_options":question.options
+            }
+        })
+
+        #starting fresh TIMER task
+        self.question_timer_task = asyncio.create_task(self._question_timer(app))
+
+
+    async def _question_timer(self, app):
+        asyncio.sleep(30)
+        for pid in [self.player1_id, self.player2_id]:
+            if pid not in self.answers_this_round.keys():
+                await handle_answer(pid, None, None, app)
+
+    async def handle_answer(self, player_id, answer, timestamp, app):
+        
