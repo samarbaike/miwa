@@ -38,9 +38,17 @@ class GameService:
         self.answers_this_round: dict[int, dict] = {} 
         #player_id : {"answer" : answer,"timestamp" : timestamp}
 
+        #to decide the winnder in case of equal scores
+        self.answer_history: dict[int, list] = {
+            player1_id : [],
+            player2_id : []
+        }
 
         #backround time tick
         self.question_timer_task: asyncio.Task | None = None 
+
+        #to calculate time_taken in answer_history
+        self.question_timer_start = None
 
     async def start_question(self, app):
 
@@ -57,6 +65,9 @@ class GameService:
         if self.question_timer_task is not None:
             self.question_timer_task.cancel()
             self.question_timer_task = None
+
+        #start the timer
+        self.question_timer_start = asyncio.get_event_loop().time()
 
         #broadcasting question to players
         await app.state.room_manager.broadcast(self.match_id, {
@@ -113,6 +124,10 @@ class GameService:
             if data["answer"] is not None and data["answer"]==question.correct_answer:
                 self.scores[player_id]+=1
 
+                #storing time taken to answer
+                time_taken = data["timestamp"] - self.question_timer_start
+                self.answer_history[player_id].append(time_taken)
+
         #broadcasting results
         await app.state.room_manager.send_to(self.match_id, self.player1_id, {
             "event" : WSEvents.QUESTION_RESULTS,
@@ -132,3 +147,5 @@ class GameService:
             await self._end_match(app)
         else: 
             await self.start_question(app)
+
+    async def _end_match(self, app):
