@@ -34,6 +34,7 @@ class RoomManager:
             except Exception:
                 to_remove.append(player_id)
 
+        #concurrently sending to every player in match
         await asyncio.gather(
             *(safe_send(pid, ws) for pid, ws in connections.items())
         )
@@ -43,14 +44,8 @@ class RoomManager:
             del connections[pid]
 
         if not connections:
-            del self.active_connections[match_id]    
-            
-            
-            
-            
-            
-            for ws in self.active_connections[match_id].values():
-                await ws.send_json(message)
+            del self.active_connections[match_id]
+
     
     async def send_to(self, match_id: int, player_id: int, message: dict):
         if match_id in self.active_connections:
