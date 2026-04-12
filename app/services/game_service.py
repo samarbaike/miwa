@@ -107,7 +107,10 @@ class GameService:
         
         await app.state.room_manager.broadcast(self.match_id, {
             "event" : WSEvents.PLAYER_ANSWERED,
-            "data" : "Ataandash joop berdi"
+            "data" : {
+                "player_id": player_id,
+                "message": "Ataandash joop berdi"
+                }
         })
 
         if len(self.answers_this_round) == 2:
@@ -130,27 +133,44 @@ class GameService:
                 self.answer_history[player_id].append(time_taken)
 
         #broadcasting results
+        # player1
         if self.answers_this_round[self.player2_id]['answer'] is not None:
             await app.state.room_manager.send_to(self.match_id, self.player1_id, {
                 "event" : WSEvents.QUESTION_RESULTS,
-                "data" : f"Ataandash {self.answers_this_round[self.player2_id]['answer']} joobun belgildedi"
+                "data" : {
+                    "correct_answer" : question.correct_answer,
+                    "current_score" : self.scores[self.player1_id],
+                    "opp_status" : f"Ataandash {self.answers_this_round[self.player2_id]['answer']} joobun belgildedi"
+                    }
             })
         else:
             await app.state.room_manager.send_to(self.match_id, self.player1_id, {
                 "event" : WSEvents.QUESTION_RESULTS,
-                "data" : f"Ataandash joob belgilebedi"
+                "data" : {
+                    "correct_answer" : question.correct_answer,
+                    "current_score" : self.scores[self.player1_id],
+                    "opp_status" : f"Ataandash joob belgilebedi"
+                    }
             })
 
-
+        # player2
         if self.answers_this_round[self.player1_id]['answer'] is not None:
             await app.state.room_manager.send_to(self.match_id, self.player2_id, {
                 "event" : WSEvents.QUESTION_RESULTS,
-                "data" : f"Ataandash {self.answers_this_round[self.player1_id]['answer']} joobun belgildedi"
+                "data" : {
+                    "correct_answer" : question.correct_answer,
+                    "current_score" : self.scores[self.player2_id],
+                    "opp_status" : f"Ataandash {self.answers_this_round[self.player1_id]['answer']} joobun belgildedi"
+                    }
             })
         else:
             await app.state.room_manager.send_to(self.match_id, self.player2_id, {
                 "event" : WSEvents.QUESTION_RESULTS,
-                "data" : f"Ataandash joob belgilebedi"
+                "data" : {
+                    "correct_answer" : question.correct_answer,
+                    "current_score" : self.scores[self.player2_id],
+                    "opp_status" : f"Ataandash joob belgilebedi"
+                    }
             })
 
         #advancing question index
