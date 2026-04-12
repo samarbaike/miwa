@@ -40,12 +40,10 @@ class GameService:
         self.answers_this_round: dict[int, dict] = {} 
         #player_id : {"answer" : answer,"timestamp" : timestamp}
 
-        #to decide the winnder in case of equal scores
-        self.answer_history: dict[int, list] = {
-            player1_id : [],
-            player2_id : []
-        }
-
+        #for the Match model storage
+        self.answers_data: dict[int, dict[int, dict]] = {}
+        # answers_data = {player_id: {question_index: {"answer": answer,"time_taken": time_taken,"is_correct": bool0}}}
+        
         #backround time tick
         self.question_timer_task: asyncio.Task | None = None 
 
@@ -86,7 +84,7 @@ class GameService:
 
     async def _question_timer(self, app):
         try:
-            await asyncio.sleep(60)
+            await asyncio.sleep(30)
         except asyncio.CancelledError:
             return
         
@@ -103,7 +101,20 @@ class GameService:
             "answer" : answer,
             "timestamp" : timestamp
         }
-          
+        
+        
+        if timestamp is None:
+            time_taken = 30
+        else:
+            time_taken = timestamp - self.question_timer_start
+
+        if player_id not in self.answers_data:
+            self.answers_data[player_id] = {}
+        self.answers_data[player_id][self.current_question_index] = {
+            "answer" : answer,
+            "time_taken" : time_taken,
+            "is_correct" : None
+        }
         
         await app.state.room_manager.broadcast(self.match_id, {
             "event" : WSEvents.PLAYER_ANSWERED,
@@ -127,10 +138,10 @@ class GameService:
         for player_id, data in self.answers_this_round.items():
             if data["answer"] is not None and data["answer"]==question.correct_answer:
                 self.scores[player_id]+=1
+                self.answers_data[player_id][self.current_question_index]["is_correct"] = True
+            else:
+                self.answers_data[player_id][self.current_question_index]["is_correct"] = False
 
-                #storing time taken to answer
-                time_taken = data["timestamp"] - self.question_timer_start
-                self.answer_history[player_id].append(time_taken)
 
         #broadcasting results
         # player1
@@ -191,8 +202,8 @@ class GameService:
             winner_id = self.player2_id
             loser_id = self.player1_id
         else:
-            p1_time_taken = sum(self.answer_history[self.player1_id])
-            p2_time_taken = sum(self.answer_history[self.player2_id])
+            p1_time_taken = sum(q["time_taken"] for q in self.answers_data[self.player1_id].values() if q["is_correct"])
+            p2_time_taken = sum(q["time_taken"] for q in self.answers_data[self.player2_id].values() if q["is_correct"])
             if p1_time_taken<p2_time_taken:
                 winner_id = self.player1_id
                 loser_id = self.player2_id
@@ -213,14 +224,15 @@ class GameService:
                     match = db.query(Match).filter(Match.id == self.match_id).first()
                     match.status = MatchStatus.COMPLETED
                     match.winner_id = None
-
+                    match.answers_data = self.answers_data
                     db.commit()
 
                 await app.state.room_manager.broadcast(self.match_id, {
                     "event":WSEvents.MATCH_ENDED,
                     "data":{
                         "status":"draw",
-                        "score": self.scores[self.player2_id]
+                        "score": self.scores[self.player2_id],
+                        "progress" : 0
                     }
                 })
                 del app.state.active_games[self.match_id]
@@ -235,19 +247,22 @@ class GameService:
             result = EloService.calculate_new_ratings(winner.elo, loser.elo)
             
             #update the damn DB for both players
+            w_progress = result[0] - winner.elo
             winner.elo = result[0]
             winner.wins += 1
             winner.streak += 1
             winner.total_matches += 1
 
-            loser.streak = 0
+            l_regress = result[1] - loser.elo
             loser.elo = result[1]
+            loser.streak = 0
             loser.total_matches += 1
 
             #update DB for Match
             match = db.query(Match).filter(Match.id == self.match_id).first()
             match.status = MatchStatus.COMPLETED
             match.winner_id = winner_id
+            match.answers_data = self.answers_data
 
             db.commit()
 
@@ -256,6 +271,7 @@ class GameService:
             "data" : {
                 "status":"win",
                 "score" : self.scores[winner_id],
+                "progress" : f"+{w_progress}",
                 "elo" : result[0]
             }
         })
@@ -264,6 +280,7 @@ class GameService:
             "data" : {
                 "status":"lose",
                 "score" : self.scores[loser_id],
+                "progress" : f"{l_regress}",
                 "elo" : result[1]
             }
         })
