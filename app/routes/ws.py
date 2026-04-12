@@ -5,6 +5,7 @@ import asyncio
 
 from app.core.events import WSEvents
 from app.models.question import MultipleChoice
+from app.models.match import Match
 from app.database import engine
 from app.services.game_service import GameService
 
@@ -44,8 +45,8 @@ async def websocket_endpoint(websocket: WebSocket, match_id: int, player_id:int)
                     match_id not in websocket.app.state.active_games
                 ):
                     with Session(engine) as db:
-                        query = select(MultipleChoice.id).order_by(func.random()).limit(10)
-                        q_ids = db.execute(query).scalars().all()
+                        q = db.query(Match).filter(Match.id == match_id).first()
+                        q_ids = q.questions_data
 
                     player1_id, player2_id = list(room_manager.active_connections[match_id].keys())
                     game = GameService(
@@ -72,7 +73,7 @@ async def websocket_endpoint(websocket: WebSocket, match_id: int, player_id:int)
 
     except WebSocketDisconnect:
         # 3. If the player's internet drops, tell the manager to disconnect them
-        await room_manager.disconnect(match_id, player_id)
+        room_manager.disconnect(match_id, player_id)
 
 @router.websocket("/ws/lobby/{player_id}")
 async def lobby_websocket(websocket: WebSocket, player_id: int):

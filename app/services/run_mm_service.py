@@ -1,9 +1,11 @@
 import asyncio
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
+from sqlalchemy import func, select
 
 from app.database import engine
 from app.models.match import Match, MatchMode, MatchStatus
+from app.models.question import MultipleChoice
 
 
 async def run_matchmaking(app: FastAPI):
@@ -24,12 +26,15 @@ async def run_matchmaking(app: FastAPI):
             print(f"Match found in background: {match[0].player.username} and {match[1].player.username}")
 
             with Session(engine) as db:
-
+                query = select(MultipleChoice.id).filter(MultipleChoice.category == match[0].category).order_by(func.random()).limit(10)
+                q_ids = db.execute(query).scalars().all()
+                
                 new_match = Match(
                     player1_id = player1.id,
                     player2_id = player2.id,
                     status = MatchStatus.IN_PROGRESS,
-                    mode = MatchMode.RANKED
+                    mode = MatchMode.RANKED,
+                    questions_data = q_ids
                 )
 
                 db.add(new_match)
