@@ -107,56 +107,57 @@ def get_bots(db: Session = Depends(get_db)):
     ]
 
 @router.post("/api/matchmaking/switch-to-bot")
-def switch_to_bot(request: Request, 
-                  request_body: BotMatch, 
-                  db: Session = Depends(get_db), 
-                  current_player : Player = Depends(get_current_player)):
-    
+def switch_to_bot(request: Request,
+                  request_body: BotMatch,
+                  db: Session = Depends(get_db),
+                  current_player: Player = Depends(get_current_player)):
+
     pool = request.app.state.pool
     deleted = pool.dequeue(current_player.id)
     if not deleted:
         raise HTTPException(status_code=400, detail="Oyunchu kutuu bolmosundo emes")
-    
-    
+
     bot = db.query(Bot).filter(Bot.id == request_body.bot_id).first()
     if bot is None:
         raise HTTPException(status_code=404, detail="Bot tabylbady")
-    
-    #creating new_match in Match model
-    quered_10q = select(MultipleChoice.id).filter(MultipleChoice.category == request_body.category).order_by(func.random()).limit(10)
+
+    # Select 10 random questions for the requested category
+    quered_10q = select(MultipleChoice.id)\
+        .filter(MultipleChoice.category == request_body.category)\
+        .order_by(func.random())\
+        .limit(10)
     quered_10q_ids = db.execute(quered_10q).scalars().all()
 
     new_match = Match(
-        player1_id = current_player.id,
-        player2_id = bot.id,
-        status = MatchStatus.IN_PROGRESS,
-        mode = MatchMode.RANKED,
-        questions_data = quered_10q_ids
+        player1_id=current_player.id,
+        player2_id=bot.id,
+        status=MatchStatus.IN_PROGRESS,
+        mode=MatchMode.RANKED,
+        questions_data=quered_10q_ids,
     )
-
     db.add(new_match)
     db.commit()
     db.refresh(new_match)
 
     match_id = new_match.id
 
-    #instantiating GameSerivce
+    # Build ghost first — it needs question IDs to pre-check performance_data
+    ghost = GhostEngine(
+        bot=bot,
+        question_ids=quered_10q_ids,
+    )
+
+    # Pass ghost directly into GameService; no more tuple storage
     game = GameService(
         match_id=match_id,
         player1_id=current_player.id,
         player2_id=bot.id,
         question_ids=quered_10q_ids,
-        is_bot_match=True
+        is_bot_match=True,
+        ghost=ghost,                   # <-- the key change
     )
 
-    #instantiating GhostEngine
-    ghost = GhostEngine(
-        bot=bot,
-        question_ids=quered_10q_ids
-    )
+    # Store a plain GameService (same shape as PvP matches)
+    request.app.state.active_games[match_id] = game
 
-    #storing
-    request.app.state.active_games[match_id] = (game, ghost)
-    return {
-        "match_id" : match_id
-    }
+    return {"match_id": match_id}

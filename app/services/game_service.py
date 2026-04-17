@@ -9,11 +9,11 @@ from app.models.user import Player
 from app.services.elo_service import EloService
 from app.models.match import Match, MatchStatus
 
-app = FastAPI()
 
 class GameService:
 
-    """one instance of this class is a active match in app.state.active_games[match_id]
+    """
+    one instance of this class is a active match in app.state.active_games[match_id]
     This class controls what is happening in that active game, who scored what, which questions
     are asked"""
 
@@ -22,12 +22,14 @@ class GameService:
                  player1_id: int, 
                  player2_id: int, 
                  question_ids: list[int],
-                 is_bot_match = False):
+                 is_bot_match = False, 
+                 ghost = None): #accepts a GhostEngine instance or does nothing
         self.match_id = match_id
         self.player1_id = player1_id
         self.player2_id = player2_id
         self.question_ids = question_ids  #id's of questions in the instance of this class
         self.is_bot_match = is_bot_match
+        self.ghost = ghost
 
         #the index of question with which game_service is dealing
         self.current_question_index = 0 #starting question will have 0
@@ -62,7 +64,9 @@ class GameService:
         questions_map = {q.id: q for q in questions}
         self.questions = [questions_map[qid] for qid in question_ids]
 
-    async def start_question(self, app):
+#PUBLIC METHODS
+
+    async def start_question(self, app) -> int: # returns question.id
 
         #fetch question from db by current_question_index
         question = self.questions[self.current_question_index]
@@ -92,17 +96,9 @@ class GameService:
         #starting fresh TIMER task
         self.question_timer_task = asyncio.create_task(self._question_timer(app))
 
-    async def _question_timer(self, app):
-        try:
-            await asyncio.sleep(30)
-        except asyncio.CancelledError:
-            return
-        
-
-        for pid in [self.player1_id, self.player2_id]:
-            if pid not in self.answers_this_round:
-                await self.handle_answer(pid, None, None, app)
-
+        #return the db id so that ghost can look it up in performance_data
+        return question.id
+    
     async def handle_answer(self, player_id, answer, timestamp, app):
         if player_id in self.answers_this_round:
             return
@@ -131,12 +127,26 @@ class GameService:
             "data" : {
                 "player_id": player_id,
                 "message": "Ataandash joop berdi"
-                }
+            }
         })
 
         if len(self.answers_this_round) == 2:
-            self.question_timer_task.cancel()
+            if self.question_timer_task:
+                self.question_timer_task.cancel()
             await self._resolve_question(app)
+
+#INTERNAL METHODS
+
+    async def _question_timer(self, app):
+        try:
+            await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            return
+        
+
+        for pid in [self.player1_id, self.player2_id]:
+            if pid not in self.answers_this_round:
+                await self.handle_answer(pid, None, None, app)
 
     async def _resolve_question(self, app):
         #fetch question from db by current_question_index
@@ -153,53 +163,62 @@ class GameService:
 
         #broadcasting results
         # player1
-        if self.answers_this_round[self.player2_id]['answer'] is not None:
-            await app.state.room_manager.send_to(self.match_id, self.player1_id, {
-                "event" : WSEvents.QUESTION_RESULTS,
-                "data" : {
-                    "correct_answer" : question.correct_answer,
-                    "current_score" : self.scores[self.player1_id],
-                    "opp_status" : f"Ataandash {self.answers_this_round[self.player2_id]['answer']} joobun belgildedi"
-                    }
-            })
-        else:
-            await app.state.room_manager.send_to(self.match_id, self.player1_id, {
-                "event" : WSEvents.QUESTION_RESULTS,
-                "data" : {
-                    "correct_answer" : question.correct_answer,
-                    "current_score" : self.scores[self.player1_id],
-                    "opp_status" : f"Ataandash joob belgilebedi"
-                    }
-            })
+        opp_answer_p2 = self.answers_this_round[self.player2_id]["answer"]
+        opp_answer_p1 = self.answers_this_round[self.player1_id]["answer"]
 
-        # player2
-        if self.answers_this_round[self.player1_id]['answer'] is not None:
-            await app.state.room_manager.send_to(self.match_id, self.player2_id, {
-                "event" : WSEvents.QUESTION_RESULTS,
-                "data" : {
-                    "correct_answer" : question.correct_answer,
-                    "current_score" : self.scores[self.player2_id],
-                    "opp_status" : f"Ataandash {self.answers_this_round[self.player1_id]['answer']} joobun belgildedi"
-                    }
-            })
-        else:
-            await app.state.room_manager.send_to(self.match_id, self.player2_id, {
-                "event" : WSEvents.QUESTION_RESULTS,
-                "data" : {
-                    "correct_answer" : question.correct_answer,
-                    "current_score" : self.scores[self.player2_id],
-                    "opp_status" : f"Ataandash joob belgilebedi"
-                    }
-            })
+        await app.state.room_manager.send_to(self.match_id, self.player1_id, {
+            "event": WSEvents.QUESTION_RESULTS,
+            "data": {
+                "correct_answer": question.correct_answer,
+                "current_score": self.scores[self.player1_id],
+                "opp_status": (
+                    f"Ataandash {opp_answer_p2} joobun belgildedi"
+                    if opp_answer_p2 is not None
+                    else "Ataandash joob belgilebedi"
+                ),
+            }
+        })
 
-        #advancing question index
-        self.current_question_index+=1
+        await app.state.room_manager.send_to(self.match_id, self.player2_id, {
+            "event": WSEvents.QUESTION_RESULTS,
+            "data": {
+                "correct_answer": question.correct_answer,
+                "current_score": self.scores[self.player2_id],
+                "opp_status": (
+                    f"Ataandash {opp_answer_p1} joobun belgildedi"
+                    if opp_answer_p1 is not None
+                    else "Ataandash joob belgilebedi"
+                ),
+            }
+        })
 
-        #stop/continue
-        if self.current_question_index>=len(self.question_ids):
+        self.current_question_index += 1
+
+        if self.current_question_index >= len(self.question_ids):
             await self._end_match(app)
-        else: 
-            await self.start_question(app)
+        else:
+            # Advance to next question and schedule ghost if this is a bot match
+            next_question_id = await self.start_question(app)
+
+            if self.ghost is not None:
+                # player1 is always the human; ghost answers as player2
+                asyncio.create_task(
+                    self._ghost_answer(next_question_id, app)
+                )
+
+
+    async def _ghost_answer(self, question_id: int, app):
+        """Background task: wait for the ghost's simulated think time, then
+        submit its answer through the normal handle_answer pipeline."""
+        answer_index = await self.ghost.answer_question(
+            question_id=question_id,
+            match_id=self.match_id,
+            player_id=self.player1_id,   # ghost sends advice TO the human
+            app=app,
+        )
+        timestamp = asyncio.get_event_loop().time()
+        await self.handle_answer(self.player2_id, answer_index, timestamp, app)
+
 
     def _determine_result(self):
         p1 = self.player1_id
