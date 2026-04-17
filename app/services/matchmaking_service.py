@@ -3,10 +3,11 @@ from collections import deque
 
 
 class WaitingPlayer:
-    def __init__(self, player, category, time_joined=None, elo_window=15):
+    def __init__(self, player, category, time_joined=None, elo_window=15, bot_offer_sent: bool = False):
         self.player = player
         self.category = category
         self.elo_window = elo_window
+        self.bot_offer_sent = bot_offer_sent
         if time_joined is None:
             self.time_joined = datetime.datetime.now(datetime.UTC)
         else: 

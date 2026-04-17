@@ -21,12 +21,14 @@ class GameService:
                  match_id: int,
                  player1_id: int, 
                  player2_id: int, 
-                 question_ids: list[int]):
+                 question_ids: list[int],
+                 is_bot_match = False):
         self.match_id = match_id
         self.player1_id = player1_id
         self.player2_id = player2_id
         self.question_ids = question_ids  #id's of questions in the instance of this class
-        
+        self.is_bot_match = is_bot_match
+
         #the index of question with which game_service is dealing
         self.current_question_index = 0 #starting question will have 0
         
@@ -50,12 +52,20 @@ class GameService:
         #to calculate time_taken in answer_history
         self.question_timer_start = None
 
+        #fetching questions earlier to keep db sessions less
+        with Session(engine) as db:
+            questions = db.query(MultipleChoice)\
+                .filter(MultipleChoice.id.in_(question_ids))\
+                .all()
+
+        # preserve order
+        questions_map = {q.id: q for q in questions}
+        self.questions = [questions_map[qid] for qid in question_ids]
+
     async def start_question(self, app):
 
         #fetch question from db by current_question_index
-        qid = self.question_ids[self.current_question_index]
-        with Session(engine) as db:
-            question = db.query(MultipleChoice).filter(MultipleChoice.id == qid).first()
+        question = self.questions[self.current_question_index]
             
         
         #reset www answered for upcoming question
@@ -193,95 +203,142 @@ class GameService:
         else: 
             await self.start_question(app)
 
+    def _determine_result(self):
+        p1 = self.player1_id
+        p2 = self.player2_id
+
+        if self.scores[p1] > self.scores[p2]:
+            return "win", p1, p2
+        elif self.scores[p2] > self.scores[p1]:
+            return "lose", p2, p1
+
+        # tie-break by time (only correct answers)
+        p1_time = sum(
+            q["time_taken"]
+            for q in self.answers_data[p1].values()
+            if q["is_correct"]
+        )
+        p2_time = sum(
+            q["time_taken"]
+            for q in self.answers_data[p2].values()
+            if q["is_correct"]
+        )
+
+        if p1_time < p2_time:
+            return "win", p1, p2
+        elif p2_time < p1_time:
+            return "lose", p2, p1
+
+        return "draw", None, None
+
     async def _end_match(self, app):
+        # 1. Determine result
+        result, winner_id, loser_id = self._determine_result()
 
-        if self.scores[self.player1_id] > self.scores[self.player2_id]:
-            winner_id = self.player1_id
-            loser_id = self.player2_id
-        elif self.scores[self.player2_id] > self.scores[self.player1_id]:
-            winner_id = self.player2_id
-            loser_id = self.player1_id
-        else:
-            p1_time_taken = sum(q["time_taken"] for q in self.answers_data[self.player1_id].values() if q["is_correct"])
-            p2_time_taken = sum(q["time_taken"] for q in self.answers_data[self.player2_id].values() if q["is_correct"])
-            if p1_time_taken<p2_time_taken:
-                winner_id = self.player1_id
-                loser_id = self.player2_id
-            elif p2_time_taken<p1_time_taken:
-                winner_id = self.player2_id
-                loser_id = self.player1_id
-            else:
-                #in case they are supppper equal
-                winner_id = None
-                loser_id = None
-                with Session(engine) as db:
-                    winner = db.query(Player).filter(Player.id == self.player1_id).first()
-                    loser = db.query(Player).filter(Player.id == self.player2_id).first()
+        # 2. DB transaction (single session)
+        with Session(engine) as db:
+            match = db.query(Match).filter(Match.id == self.match_id).first()
+            match.status = MatchStatus.COMPLETED
+            match.answers_data = self.answers_data
 
-                    winner.total_matches += 1
-                    loser.total_matches +=1
+            p1 = db.query(Player).filter(Player.id == self.player1_id).first()
+            p2 = db.query(Player).filter(Player.id == self.player2_id).first()
 
-                    match = db.query(Match).filter(Match.id == self.match_id).first()
-                    match.status = MatchStatus.COMPLETED
-                    match.winner_id = None
-                    match.answers_data = self.answers_data
-                    db.commit()
+            # BOT MATCH
+            if self.is_bot_match:
+                human = p1  # assuming player1 is human
 
-                await app.state.room_manager.broadcast(self.match_id, {
-                    "event":WSEvents.MATCH_ENDED,
-                    "data":{
-                        "status":"draw",
-                        "score": self.scores[self.player2_id],
-                        "progress" : 0
+                human.total_matches += 1
+
+                if result == "win":
+                    human.wins += 1
+                    human.streak += 1
+                elif result == "lose":
+                    human.streak = 0
+                elif result == "draw":
+                    human.wins += 1
+                    human.streak += 1  # keep your original logic
+
+                match.winner_id = None
+
+                db.commit()
+
+                await app.state.room_manager.send_to(self.match_id, self.player1_id, {
+                    "event": WSEvents.MATCH_ENDED,
+                    "data": {
+                        "status": result,
+                        "score": self.scores[self.player1_id],
+                        "progress": 0,
+                        "comment": "Bottor menen oynoo ELO'nu kotorboit"
                     }
                 })
+
                 del app.state.active_games[self.match_id]
                 return
 
+            # DRAW (PvP)
+            if result == "draw":
+                p1.total_matches += 1
+                p2.total_matches += 1
+                match.winner_id = None
 
-        #calculating new ELO's
-        with Session(engine) as db:
-            winner = db.query(Player).filter(Player.id == winner_id).first()
-            loser = db.query(Player).filter(Player.id == loser_id).first()
-        
-            result = EloService.calculate_new_ratings(winner.elo, loser.elo)
-            
-            #update the damn DB for both players
-            w_progress = result[0] - winner.elo
-            winner.elo = result[0]
+                db.commit()
+
+                await app.state.room_manager.broadcast(self.match_id, {
+                    "event": WSEvents.MATCH_ENDED,
+                    "data": {
+                        "status": "draw",
+                        "score": self.scores[self.player1_id],
+                        "progress": 0
+                    }
+                })
+
+                del app.state.active_games[self.match_id]
+                return
+
+            # WIN / LOSE (PvP)
+            winner = p1 if winner_id == self.player1_id else p2
+            loser = p2 if winner_id == self.player1_id else p1
+
+            result_elo = EloService.calculate_new_ratings(winner.elo, loser.elo)
+
+            w_progress = result_elo[0] - winner.elo
+            l_progress = result_elo[1] - loser.elo
+
+            # update winner
+            winner.elo = result_elo[0]
             winner.wins += 1
             winner.streak += 1
             winner.total_matches += 1
 
-            l_regress = result[1] - loser.elo
-            loser.elo = result[1]
+            # update loser
+            loser.elo = result_elo[1]
             loser.streak = 0
             loser.total_matches += 1
 
-            #update DB for Match
-            match = db.query(Match).filter(Match.id == self.match_id).first()
-            match.status = MatchStatus.COMPLETED
             match.winner_id = winner_id
-            match.answers_data = self.answers_data
 
             db.commit()
 
+        # 3. Send results (outside DB session)
+
         await app.state.room_manager.send_to(self.match_id, winner_id, {
-            "event" : WSEvents.MATCH_ENDED,
-            "data" : {
-                "status":"win",
-                "score" : self.scores[winner_id],
-                "progress" : f"+{w_progress}",
-                "elo" : result[0]
+            "event": WSEvents.MATCH_ENDED,
+            "data": {
+                "status": "win",
+                "score": self.scores[winner_id],
+                "progress": f"+{w_progress}",
+                "elo": result_elo[0]
             }
         })
+
         await app.state.room_manager.send_to(self.match_id, loser_id, {
-            "event" : WSEvents.MATCH_ENDED,
-            "data" : {
-                "status":"lose",
-                "score" : self.scores[loser_id],
-                "progress" : f"{l_regress}",
-                "elo" : result[1]
+            "event": WSEvents.MATCH_ENDED,
+            "data": {
+                "status": "lose",
+                "score": self.scores[loser_id],
+                "progress": f"{l_progress}",
+                "elo": result_elo[1]
             }
         })
 

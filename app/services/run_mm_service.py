@@ -2,6 +2,7 @@ import asyncio
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
 from sqlalchemy import func, select
+from datetime import datetime, UTC
 
 from app.database import engine
 from app.models.match import Match, MatchMode, MatchStatus
@@ -45,5 +46,9 @@ async def run_matchmaking(app: FastAPI):
 
             await global_manager.notify_match_found(player1.id, match_id)
             await global_manager.notify_match_found(player2.id, match_id)
+        for player in pool.q:
+            if player.bot_offer_sent == False and (datetime.now(UTC) - player.time_joined).total_seconds() >= 60:
+                await app.state.global_manager.notify_bot_offer(player.get_id())
+                player.bot_offer_sent = True
 
         await asyncio.sleep(10)

@@ -1,12 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import func, select
 
 from app.database import get_db
 from app.services.match_service import MatchService
 from app.core.dependencies import get_current_player
 from app.models.user import Player
 from app.models.match import Match, MatchStatus, MatchMode
+from app.models.bot import Bot
+from app.models.question import MultipleChoice
 from app.services.matchmaking_service import WaitingPlayer
+from app.schemas.match import BotMatch
+from app.services.game_service import GameService
+from app.services.bot_service import GhostEngine
 
 router = APIRouter()
 
@@ -77,8 +83,8 @@ def cancel(request: Request,
     
     pool = request.app.state.pool
 
-    delete = pool.dequeue(current_player.id)
-    if not delete:
+    deleted = pool.dequeue(current_player.id)
+    if not deleted:
         raise HTTPException(status_code=400, detail="Oyunchu kutuu bolmosundo emes")
     
     return {
@@ -86,3 +92,71 @@ def cancel(request: Request,
         "message":"Kutuu bolmusunon chygaryldynyz"
     }
 
+@router.get("/api/bots")
+def get_bots(db: Session = Depends(get_db)):
+    bots = db.query(
+        Bot.id,
+        Bot.botname,
+        Bot.backstory
+        ).all()
+    return [
+        {"id" : bot.id,
+         "botname" : bot.botname,
+         "backstory" : bot.backstory}
+         for bot in bots
+    ]
+
+@router.post("/api/matchmaking/switch-to-bot")
+def switch_to_bot(request: Request, 
+                  request_body: BotMatch, 
+                  db: Session = Depends(get_db), 
+                  current_player : Player = Depends(get_current_player)):
+    
+    pool = request.app.state.pool
+    deleted = pool.dequeue(current_player.id)
+    if not deleted:
+        raise HTTPException(status_code=400, detail="Oyunchu kutuu bolmosundo emes")
+    
+    
+    bot = db.query(Bot).filter(Bot.id == request_body.bot_id).first()
+    if bot is None:
+        raise HTTPException(status_code=404, detail="Bot tabylbady")
+    
+    #creating new_match in Match model
+    quered_10q = select(MultipleChoice.id).filter(MultipleChoice.category == request_body.category).order_by(func.random()).limit(10)
+    quered_10q_ids = db.execute(quered_10q).scalars().all()
+
+    new_match = Match(
+        player1_id = current_player.id,
+        player2_id = bot.id,
+        status = MatchStatus.IN_PROGRESS,
+        mode = MatchMode.RANKED,
+        questions_data = quered_10q_ids
+    )
+
+    db.add(new_match)
+    db.commit()
+    db.refresh(new_match)
+
+    match_id = new_match.id
+
+    #instantiating GameSerivce
+    game = GameService(
+        match_id=match_id,
+        player1_id=current_player.id,
+        player2_id=bot.id,
+        question_ids=quered_10q_ids,
+        is_bot_match=True
+    )
+
+    #instantiating GhostEngine
+    ghost = GhostEngine(
+        bot=bot,
+        question_ids=quered_10q_ids
+    )
+
+    #storing
+    request.app.state.active_games[match_id] = (game, ghost)
+    return {
+        "match_id" : match_id
+    }

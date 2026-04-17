@@ -22,3 +22,10 @@ class GlobalManager:
                 "event": "match_found",
                 "match_id": match_id
             })
+
+    async def notify_bot_offer(self, player_id: int):
+        if player_id in self.active_players:
+            await self.active_players[player_id].send_json({
+                "event": "bot_offer",
+                "message": "No opponent found yet. Want to play against a bot?"
+            })

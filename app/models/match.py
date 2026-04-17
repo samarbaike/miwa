@@ -1,6 +1,6 @@
 import enum
 from app.database import Base
-from sqlalchemy import Column, Integer, String, JSON, Enum
+from sqlalchemy import Column, Integer, String, Boolean, JSON, Enum
 
 class MatchStatus(enum.Enum):
     WAITING = "waiting"
