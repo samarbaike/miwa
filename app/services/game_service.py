@@ -140,9 +140,7 @@ class GameService:
 
     async def _resolve_question(self, app):
         #fetch question from db by current_question_index
-        qid = self.question_ids[self.current_question_index]
-        with Session(engine) as db:
-            question = db.query(MultipleChoice).filter(MultipleChoice.id == qid).first()
+        question = self.questions[self.current_question_index]
 
         #calculating scores
         for player_id, data in self.answers_this_round.items():
