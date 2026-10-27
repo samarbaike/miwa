@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miwa</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">MIWA <span>ORT Arena</span></div>
+        <nav>
+            <button id="nav-home-btn" class="nav-btn active">Home</button>
+            <button id="nav-lobby-btn" class="nav-btn">Lobby</button>
+            <button id="nav-auth-btn" class="nav-btn btn-outline">Login/Register</button>
+        </nav>
+    </header>
+    <section id="hero-view" class="view-section"> #hero-view
+        <h1>
+            1v1 Quiz Battles
+        </h1>
+        <p>
+            hit the PLAY button and compete with real time people answering question
+        </p>
+        <div class="hero-actions">
+            <button id="cta-play-btn" class="btn btn-primary">PlaY 1v1 Now</button>
+            <button id="cta-register-btn" class="btn btn-secondary">Create Account</button>
+        </div>
+    </section>
+    <section id="auth-view" class="view-section hidden">
+        <article class="auth-card">
+            <h2>
+                Login to Miwa
+            </h2>
+            <form id="auth-form">
+                <div id = "username-group" class="form-group">
+                    <label for = "username-group">Username</label>
+                    <input type="text" id ="username-group">
+                </div>
+                <div id = "email-group" class = "form-group">
+                    <label for = "email">Email</label>
+                    <input type="email" id="email" ...>
+                </div>
+                <div id = "password-group" class = "from-group">
+                    <label for = "password">Password</label>
+                    <input type ="password" id="password">
+                </div>
+                <button type = "submit" id = 'auth-submit-btn' class ="btn btn-primary full-width">Sign In</button>
+            </form>
+            <p>
+                Don't have an account? <a href="#" id="toggle-auth-mode">Register here</a>
+            </p>
+        </article>
+    </section>
+    <script type = "module" src="dist/app.js" defer></script>
+</body>
+</html>
