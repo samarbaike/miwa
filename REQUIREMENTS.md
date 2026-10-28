@@ -17,7 +17,7 @@
 
 ## 2. Core Features
 
-| Feature Domain | Description | Current Codebase Modules |
+| Feature Domain | Description | Current CB(codebase) Modules |
 | :--- | :--- | :--- |
 | **Authentication & Sessions** | Bcrypt password hashing and stateful HTTP-only cookie sessions (`session_id`) with 24-hour expiration. | `app/routes/auth.py`, `app/services/auth_service.py`, `app/core/security.py`, `app/models/session.py` |
 | **Player Profiles & Stats** | Tracks ELO rating (default `110` / configurable), wins, current win streak, total matches played, and Top 20 ELO leaderboard. | `app/routes/user.py`, `app/models/user.py`, `app/schemas/user.py` |
