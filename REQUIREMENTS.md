@@ -2,7 +2,7 @@
 
 > **Project:** Miwa (Real-Time 1v1 ОРТ Quiz Platform)  
 > **Target Scale:** Production-ready for up to **5,000 concurrent users** (~2,500 simultaneous live matches / lobby connections)  
-> **Stack:** FastAPI, WebSockets, SQLAlchemy + PostgreSQL (Supabase), Vanilla TypeScript/HTML/CSS SPA  
+> **Stack:** FastAPI, WebSockets, SQLAlchemy + PostgreSQL (Supabase), **React.js** (Vite + React Router + CSS Modules / Standard CSS)  
 
 ---
 
@@ -57,32 +57,39 @@
 
 ---
 
-## 4. Required Application Pages / Views
+## 4. Required Application Pages & React.js Architecture
 
-The frontend (`frontend/index.html`, `frontend/src/app.ts`, `frontend/styles.css`) is structured as a Single-Page Application (SPA) with the following views:
+The frontend (`frontend/`) will be built as a **React.js Single-Page Application (SPA)** (bootstrapped with Vite and `react-router-dom`), converting the current HTML sections in `frontend/index.html` into modular React pages, reusable components, and custom hooks:
 
-1. **Home / Landing View (`#hero-view`)**
-   - Top navigation bar (`Home`, `Lobby`, `Leaderboard`, `Profile`, `Login/Register`).
-   - Value proposition banner and primary CTAs (`Play 1v1 Now`, `Create Account`).
-2. **Authentication View (`#auth-view`)**
-   - Toggleable **Sign In** and **Create Account** card (`username`, `email` [register only], `password`).
-   - Inline form validation and API error feedback.
-3. **Lobby / Dashboard View (`#lobby-view`)**
-   - **Stats Cards Grid:** Current ELO + Division badge, Matches Played, Win Rate %, Current Streak.
-   - **Arena Action Panel:**
-     - Mode tabs: `Ranked 1v1`, `Invite Friend`, `Practice / Bot`.
-     - Category dropdown: `Math`, `Grammar`, `Vocabulary`.
-     - Queue status bar with elapsed timer, `Cancel` button, and **Bot Offer Modal** (lists bots from `/api/bots` with backstories).
-     - Invite controls: `Create Room Code` display and `Join by Code` input field.
-   - **Recent Matches Table:** Date, Opponent, Mode/Category, Score, Result badge, ELO change.
-4. **Live Battle Arena View (`#battle-view`)**
-   - **Match Header:** Player 1 (Name + Score) vs. Player 2 / Bot (Name + Score), Question counter (`1 / 10`), and visual 30-second countdown bar.
-   - **Question Card:** Question text (`q_text`), optional diagram/image, and 4 interactive option buttons (`q_options`).
-   - **Status & Advice Strip:** Real-time indicator (`"Opponent has answered..."`) and Ghost bot hint box when applicable.
-   - **End-of-Match Overlay Modal:** Victory/Defeat/Draw banner, final score breakdown, ELO rating change (`+16` / `-14`), and `Return to Lobby` CTA.
-5. **Leaderboard & Profile Views (`#leaderboard-view`, `#profile-view`)**
-   - Top 20 players table (Rank, Username, ELO, Wins, Total Matches).
-   - Account settings form (Update Username, Logout, Delete Account with confirmation).
+### 4.1 React Pages & Routes
+
+1. **Home / Landing Page (`/` — `<HomePage />`)**
+   - Persistent `<Navbar />` (`Home`, `Lobby`, `Leaderboard`, `Profile`, `Login / Register`).
+   - Hero section (`<Hero />`) with value proposition and primary CTAs (`Play 1v1 Now`, `Create Account`).
+2. **Authentication Page (`/auth` — `<AuthPage />`)**
+   - Controlled `<AuthForm />` component using `useState` to toggle between **Sign In** and **Create Account** modes (`username`, `email` [register only], `password`).
+   - Form validation, loading state, error banner, and automatic redirect to `/lobby` upon successful authentication.
+3. **Lobby / Dashboard Page (`/lobby` — `<LobbyPage />`, Protected Route)**
+   - **Stats Cards Grid (`<StatsGrid />`):** Displays Current ELO + Division badge, Matches Played, Win Rate %, and Current Streak fetched from `GET /api/user/{id}/stats`.
+   - **Arena Action Panel (`<MatchmakingPanel />`):**
+     - Mode selector tabs: `Ranked 1v1`, `Invite Friend`, `Practice / Bot`.
+     - Category selector: `Math`, `Grammar`, `Vocabulary`.
+     - Live queue status bar with `useEffect` elapsed timer, `Cancel` button, and **Bot Offer Modal (`<BotOfferModal />`)** triggered on the `bot_offer` WebSocket event (fetches `/api/bots` and calls `/api/matchmaking/switch-to-bot`).
+     - Invite controls: `Create Room Code` display and `Join by Code` controlled input.
+   - **Recent Matches Table (`<MatchHistoryTable />`):** Renders match rows (`Date`, `Opponent`, `Category`, `Score`, `Result`, `ELO Change`).
+4. **Live Battle Arena Page (`/battle/:matchId` — `<BattlePage />`, Protected Route)**
+   - **Match Header (`<BattleHeader />`):** Player 1 (Name + Score) vs. Player 2 / Bot (Name + Score), Question counter (`1 / 10`), and reactive 30-second countdown bar.
+   - **Question Card (`<QuestionCard />`):** Renders `q_text`, optional diagram/image, and 4 option buttons (`q_options`) with locked/correct/incorrect visual states.
+   - **Status & Advice Strip (`<OpponentStatus />` & `<BotAdviceBanner />`):** Real-time indicator when `player_answered` fires, plus Ghost bot hints (`advice`) when present.
+   - **End-of-Match Overlay (`<MatchResultModal />`):** Displays Victory/Defeat/Draw banner, final score breakdown, ELO rating delta (`+16` / `-14`), and `Return to Lobby` button.
+5. **Leaderboard & Profile Pages (`/leaderboard` — `<LeaderboardPage />`, `/profile` — `<ProfilePage />`)**
+   - Top 20 players table (`Rank`, `Username`, `ELO`, `Wins`, `Total Matches`).
+   - Account settings form (`Update Username`, `Logout`, `Delete Account` confirmation modal).
+
+### 4.2 Core React State & Custom Hooks
+- **`AuthContext` (`useAuth`):** Holds `currentUser` state, verifies session on app load via `GET /api/user/me` (`credentials: "include"`), and provides `login()`, `register()`, and `logout()` actions.
+- **`useLobbySocket(playerId)`:** Manages `/ws/lobby/{player_id}` lifecycle inside `useEffect`, handling `match_found` (navigates to `/battle/:matchId`) and `bot_offer` events, and cleans up the socket on unmount.
+- **`useBattleSocket(matchId, playerId)`:** Manages `/ws/match/{match_id}/{player_id}`, dispatches `join_match` and `submit_answer`, and updates React state on `question_start`, `player_answered`, `question_results`, and `match_ended`.
 
 ---
 
@@ -118,17 +125,18 @@ To stably support **5,000 concurrent users** (e.g., 3,000 users in 1,500 active 
    - *Current state:* `create_invite_match` leaves `questions_data` as `None`, crashing `GameService` when players join the WebSocket.
    - *Required change:* Accept a `category` parameter in `/api/matches/create-invite`, select 10 random question IDs, and notify Player 1 via WebSocket when Player 2 joins `/api/matches/join-invite`.
 
-### 5.3 Security & API Hardening
-1. **Leaderboard Data Leak (`app/routes/user.py`):** Add `response_model=list[UserResponse]` (or a dedicated `LeaderboardEntry` schema without `email`) to `GET /api/leaderboard` so `password_hash` is never serialized.
-2. **WebSocket Cookie Authentication (`app/routes/ws.py`):** Validate `websocket.cookies.get("session_id")` when accepting `/ws/lobby` and `/ws/match` connections so users cannot spoof another `player_id` in the URL.
-3. **Duplicate Username Check (`app/services/auth_service.py`):** Check `(Player.email == user_in.email) | (Player.username == user_in.username)` before `session.commit()` to return `400 Bad Request` instead of an unhandled `500 IntegrityError`.
-4. **Authorization Status Codes (`app/routes/user.py`):** Return `403 Forbidden` instead of `404 Not Found` when `current_user.id != user_id` in `PUT`/`DELETE /api/user/{user_id}`, and set `default=None` on `UserUpdate.username`.
+### 5.3 Security, CORS & API Hardening
+1. **Enable CORS for React Frontend (`app/main.py`):** Add FastAPI `CORSMiddleware` with `allow_origins=["http://localhost:5173", "<production-frontend-domain>"]` and `allow_credentials=True` so the React app can send and receive the `HttpOnly` `session_id` cookie across requests (`fetch(..., { credentials: "include" })`).
+2. **Leaderboard Data Leak (`app/routes/user.py`):** Add `response_model=list[UserResponse]` (or a dedicated `LeaderboardEntry` schema without `email`) to `GET /api/leaderboard` so `password_hash` is never serialized.
+3. **WebSocket Cookie Authentication (`app/routes/ws.py`):** Validate `websocket.cookies.get("session_id")` when accepting `/ws/lobby` and `/ws/match` connections so users cannot spoof another `player_id` in the URL.
+4. **Duplicate Username Check (`app/services/auth_service.py`):** Check `(Player.email == user_in.email) | (Player.username == user_in.username)` before `session.commit()` to return `400 Bad Request` instead of an unhandled `500 IntegrityError`.
+5. **Authorization Status Codes (`app/routes/user.py`):** Return `403 Forbidden` instead of `404 Not Found` when `current_user.id != user_id` in `PUT`/`DELETE /api/user/{user_id}`, and set `default=None` on `UserUpdate.username`.
 
 ---
 
 ## 6. Testing & Verification Plan
 
-### 6.1 Functional Test Suite (`pytest` + `FastAPI TestClient`)
+### 6.1 Functional Test Suite (Backend `pytest` + React Component/E2E Tests)
 
 | Test Area | Test Cases to Verify | Expected Outcome |
 | :--- | :--- | :--- |
@@ -138,6 +146,7 @@ To stably support **5,000 concurrent users** (e.g., 3,000 users in 1,500 active 
 | **1v1 WebSocket Battle** | 1. Both players connect & send `join_match`<br>2. Both submit answers across 10 questions<br>3. Tie-break scenario (equal scores, different answer times)<br>4. Question timeout (neither or one player answers within 30s)<br>5. Mid-match disconnect / tab close | `question_start` $\rightarrow$ `player_answered` $\rightarrow$ `question_results` $\rightarrow$ `match_ended` fire in order; ELO, wins, streak, and `answers_data` persist accurately. |
 | **Bot / Ghost Flow** | 1. Wait 60s in queue $\rightarrow$ receive `bot_offer`<br>2. Call `/api/matchmaking/switch-to-bot` with same `bot.id` as `player.id`<br>3. Play 10 questions with recorded `performance_data`, `advice_data=None`, and fallback questions | Bot answers at recorded delay; hints arrive when present; match ends with `0` ELO change and no ID collision. |
 | **Invite Match Flow** | 1. Player 1 creates invite (`POST /api/matches/create-invite`)<br>2. Player 1 tries joining own code (rejected)<br>3. Player 2 joins code (`POST /api/matches/join-invite`) and both complete WebSocket match | Room code generated; 10 questions loaded; self-join blocked with `400`; full match completes cleanly. |
+| **React Frontend UI & Hooks** | 1. `<AuthForm />` toggles Login/Register state and submits credentials<br>2. Protected routes (`/lobby`, `/battle/:matchId`) redirect unauthenticated users to `/auth`<br>3. `useLobbySocket` transitions to `/battle/:matchId` on `match_found` and opens `<BotOfferModal />` on `bot_offer`<br>4. `<BattlePage />` renders options, disables buttons after click, updates scores on `question_results`, and shows `<MatchResultModal />` on `match_ended` | Components render without console/state errors; WebSocket connections close cleanly on component unmount (`useEffect` cleanup). |
 
 ### 6.2 Load & Performance Testing (5,000 Concurrent Users Target)
 
