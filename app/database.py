@@ -15,7 +15,7 @@ PORT = os.getenv("port")
 DBNAME = os.getenv("dbname")
 SQLALCHEMY_DATABASE_URL = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?sslmode=require"
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL, poolclass=NullPool)
+engine = create_engine(SQLALCHEMY_DATABASE_URL, poolclass=NullPool, echo=True)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
