@@ -1,0 +1,129 @@
+/* ==========================================================================
+   global.css — imported once in main.tsx
+   Holds only what is shared app-wide: tokens, reset, base, utilities, buttons.
+   Page/component styles (navbar, stats grid, match table...) live in
+   *.module.css files next to their components.
+   ========================================================================== */
+
+/* ---------- Theme tokens ---------- */
+:root {
+  --bg-dark: #0f172a;
+  --bg-card: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --primary: #6366f1;        /* Indigo accent */
+  --primary-hover: #4f46e5;
+  --win-green: #10b981;      /* Positive ELO */
+  --loss-red: #ef4444;       /* Negative ELO */
+  --border-color: #334155;
+
+  --radius: 8px;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ---------- Reset ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- Base ---------- */
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--primary-hover);
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ---------- State utilities ---------- */
+.hidden {
+  display: none !important;
+}
+
+.elo-gain {
+  color: var(--win-green);
+  font-weight: 700;
+}
+
+.elo-loss {
+  color: var(--loss-red);
+  font-weight: 700;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--text-main);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border-color: var(--border-color);
+  color: var(--text-main);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-card);
+}
+
+.btn-danger {
+  background-color: var(--loss-red);
+  color: var(--text-main);
+}
+
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}
