@@ -33,7 +33,7 @@ This mode targets the **Kyrgyz language**, even though many ОРТ test-takers t
 | Real-time communication | WebSockets |
 | Language | Python |
 | Database | PostgreSQL (hosted on Supabase), accessed through SQLAlchemy |
-| Frontend / client | Planned: vanilla HTML, CSS and JavaScript (see [Roadmap](#roadmap)) |
+| Frontend / client | React.js HTML, CSS and JavaScript (see [Roadmap](#roadmap)) |
 
 ## Architecture
 
