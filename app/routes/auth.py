@@ -16,12 +16,19 @@ def register(user_data: UserRegister, db: Session = Depends(get_db)):
     auth = authorize.register(db, user_data)
     return auth
 
-@router.post("/api/login")
-def login(user_data: LoginRequest,response: Response, db: Session = Depends(get_db)):
+@router.post("/api/login", response_model=UserResponse)
+def login(user_data: LoginRequest, response: Response, db: Session = Depends(get_db)):
     auth_service = AuthService()
     session, token = auth_service.login(db, user_data)
-    response.set_cookie(key="session_id", value=token, httponly=True)
-    return {"message": "Login successful"}
+    response.set_cookie(key="session_id", 
+                        value=token, 
+                        httponly=True, 
+                        max_age= 24*60*60, 
+                        samesite="lax",
+                        #secure=True <= enable in production(when https address is acquired) 
+    player = db.get(Player, session.player_id)
+    return {"message": "Login successful",
+            "player": player}
 
 @router.get("/api/user/me", response_model = UserResponse)
 def testing(current_player: Player = Depends(get_current_player)):

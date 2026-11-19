@@ -40,7 +40,7 @@ app.add_middleware(
     allow_methods=["*"]
 )
 
-app.include_router(auth.router)
+app.include_router(auth.router) #orders matters: auth then user
 app.include_router(user.router)
 app.include_router(matches.router)
 app.include_router(ws.router)

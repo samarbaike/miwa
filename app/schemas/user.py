@@ -28,4 +28,4 @@ class UserStats(BaseModel):
 
 class UserUpdate(BaseModel):
 
-    username: Optional[str] = Field(min_length=5, max_length=50)
+    username: Optional[str] = Field(default=None, min_length=5, max_length=50)
