@@ -26,6 +26,7 @@ def login(user_data: LoginRequest, response: Response, db: Session = Depends(get
                         max_age= 24*60*60, 
                         samesite="lax",
                         #secure=True <= enable in production(when https address is acquired) 
+    )
     player = db.get(Player, session.player_id)
     return {"message": "Login successful",
             "player": player}
