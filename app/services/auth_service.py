@@ -12,8 +12,9 @@ import pytz
 
 class AuthService:
     def register(self, session: Session, user_in: UserRegister):
+        normalized_email = user_in.email.lower()
         
-        existing_user_email = session.query(Player).filter(Player.email == user_in.email.lower()).first()
+        existing_user_email = session.query(Player).filter(Player.email == normalized_email).first()
 
         if existing_user_email:
             raise HTTPException(status_code=400, detail=f"The User with such email exists!")
@@ -29,7 +30,7 @@ class AuthService:
         
         hashed_pw = Hasher.get_password_hash(user_in.password)
         
-        new_player = Player(username = user_in.username, email = user_in.email, password_hash = hashed_pw)
+        new_player = Player(username = user_in.username, email = normalized_email, password_hash = hashed_pw)
 
         session.add(new_player)
         session.commit()
@@ -57,7 +58,7 @@ class AuthService:
                 session.commit()
                 session.refresh(new_session)
 
-                return new_session, new_session_token
+                return new_session, new_session_token, existing_user
         
             else:
                 raise HTTPException(status_code=401, detail="Wrong password")
